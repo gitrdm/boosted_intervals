@@ -233,6 +233,143 @@ midpoint.units_interval <- function(x) {
   units::set_units(res, units(x$lower), mode = "standard")
 }
 
+#' Interval radius (semi-width)
+#'
+#' The radius (also called semi-width) of an interval is half of its width.
+#' This is useful when propagating uncertainties or computing relative error
+#' bands. Results retain the same units as the input interval.
+#'
+#' @param x A `units_interval` object.
+#' @return A `units` vector containing interval radii.
+#' @export
+radius <- function(x) {
+  UseMethod("radius")
+}
+
+#' @rdname radius
+#' @export
+radius.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  res <- interval_radius(numerics$lower, numerics$upper)
+  units::set_units(res, units(x$lower), mode = "standard")
+}
+
+#' Interval magnitude and mignitude
+#'
+#' These helpers surface Boost's `mag()` and `mig()` utilities. `mag()` returns
+#' the maximum absolute value attainable within the interval, while `mig()`
+#' returns the minimum absolute value (zero if the interval spans zero).
+#'
+#' @inheritParams radius
+#' @return A `units` vector.
+#' @name magnitude-helpers
+NULL
+
+#' @rdname magnitude-helpers
+#' @export
+mag <- function(x) {
+  UseMethod("mag")
+}
+
+#' @rdname magnitude-helpers
+#' @export
+mag.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  res <- interval_mag(numerics$lower, numerics$upper)
+  units::set_units(res, units(x$lower), mode = "standard")
+}
+
+#' @rdname magnitude-helpers
+#' @export
+mig <- function(x) {
+  UseMethod("mig")
+}
+
+#' @rdname magnitude-helpers
+#' @export
+mig.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  res <- interval_mig(numerics$lower, numerics$upper)
+  units::set_units(res, units(x$lower), mode = "standard")
+}
+
+#' Interval distance
+#'
+#' Computes the smallest distance between two intervals. Overlapping intervals
+#' yield zero, while disjoint intervals return the gap between their hulls.
+#'
+#' @param x,y `units_interval` objects. Recycling rules match those of
+#'   arithmetic operations.
+#' @return A `units` vector describing the element-wise distance.
+#' @export
+distance <- function(x, y) {
+  pair <- .coerce_pair_same_units(x, y)
+  base_unit <- units(pair$x$lower)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  res <- interval_distance(x_num$lower, x_num$upper, y_num$lower, y_num$upper)
+  units::set_units(res, base_unit, mode = "standard")
+}
+
+# Diagnostics --------------------------------------------------------------
+
+#' Interval diagnostics
+#'
+#' `zero_in()` reports whether an interval contains zero. `is_empty()` checks
+#' for empty intervals (represented as `NA` bounds in this package). `is_subset`
+#' and `is_proper_subset` surface Boost's containment predicates.
+#'
+#' @param x,y `units_interval` objects.
+#' @return For `zero_in()` and `is_empty()`, a logical vector. For
+#'   `is_subset()` / `is_proper_subset()`, a logical vector indicating whether
+#'   the condition holds element-wise.
+#' @name interval-diagnostics
+NULL
+
+#' @rdname interval-diagnostics
+#' @export
+zero_in <- function(x) {
+  UseMethod("zero_in")
+}
+
+#' @rdname interval-diagnostics
+#' @export
+zero_in.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  as.vector(interval_zero_in(numerics$lower, numerics$upper))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_empty <- function(x) {
+  UseMethod("is_empty")
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_empty.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  as.vector(interval_is_empty(numerics$lower, numerics$upper))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_subset <- function(x, y) {
+  pair <- .coerce_pair_same_units(x, y)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  as.vector(interval_subset(x_num$lower, x_num$upper, y_num$lower, y_num$upper))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_proper_subset <- function(x, y) {
+  pair <- .coerce_pair_same_units(x, y)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  as.vector(interval_proper_subset(x_num$lower, x_num$upper, y_num$lower, y_num$upper))
+}
+
 # Containment ---------------------------------------------------------------
 
 #' Interval containment

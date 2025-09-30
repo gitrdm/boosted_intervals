@@ -374,6 +374,108 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_zero_in
+Rcpp::LogicalVector interval_zero_in(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_zero_in(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_zero_in(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_is_empty
+Rcpp::LogicalVector interval_is_empty(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_is_empty(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_is_empty(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_subset
+Rcpp::LogicalVector interval_subset(Rcpp::NumericVector outer_lower, Rcpp::NumericVector outer_upper, Rcpp::NumericVector inner_lower, Rcpp::NumericVector inner_upper);
+RcppExport SEXP _boostedintervals_interval_subset(SEXP outer_lowerSEXP, SEXP outer_upperSEXP, SEXP inner_lowerSEXP, SEXP inner_upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type outer_lower(outer_lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type outer_upper(outer_upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type inner_lower(inner_lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type inner_upper(inner_upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_subset(outer_lower, outer_upper, inner_lower, inner_upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_proper_subset
+Rcpp::LogicalVector interval_proper_subset(Rcpp::NumericVector outer_lower, Rcpp::NumericVector outer_upper, Rcpp::NumericVector inner_lower, Rcpp::NumericVector inner_upper);
+RcppExport SEXP _boostedintervals_interval_proper_subset(SEXP outer_lowerSEXP, SEXP outer_upperSEXP, SEXP inner_lowerSEXP, SEXP inner_upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type outer_lower(outer_lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type outer_upper(outer_upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type inner_lower(inner_lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type inner_upper(inner_upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_proper_subset(outer_lower, outer_upper, inner_lower, inner_upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_radius
+Rcpp::NumericVector interval_radius(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_radius(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_radius(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_mag
+Rcpp::NumericVector interval_mag(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_mag(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_mag(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_mig
+Rcpp::NumericVector interval_mig(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_mig(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_mig(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_distance
+Rcpp::NumericVector interval_distance(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1, Rcpp::NumericVector lower2, Rcpp::NumericVector upper2);
+RcppExport SEXP _boostedintervals_interval_distance(SEXP lower1SEXP, SEXP upper1SEXP, SEXP lower2SEXP, SEXP upper2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower1(lower1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper1(upper1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower2(lower2SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper2(upper2SEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_distance(lower1, upper1, lower2, upper2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_tan
 Rcpp::List interval_tan(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
 RcppExport SEXP _boostedintervals_interval_tan(SEXP lowerSEXP, SEXP upperSEXP) {
@@ -524,6 +626,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_abs", (DL_FUNC) &_boostedintervals_interval_abs, 2},
     {"_boostedintervals_interval_sqrt", (DL_FUNC) &_boostedintervals_interval_sqrt, 2},
     {"_boostedintervals_interval_pow", (DL_FUNC) &_boostedintervals_interval_pow, 3},
+    {"_boostedintervals_interval_zero_in", (DL_FUNC) &_boostedintervals_interval_zero_in, 2},
+    {"_boostedintervals_interval_is_empty", (DL_FUNC) &_boostedintervals_interval_is_empty, 2},
+    {"_boostedintervals_interval_subset", (DL_FUNC) &_boostedintervals_interval_subset, 4},
+    {"_boostedintervals_interval_proper_subset", (DL_FUNC) &_boostedintervals_interval_proper_subset, 4},
+    {"_boostedintervals_interval_radius", (DL_FUNC) &_boostedintervals_interval_radius, 2},
+    {"_boostedintervals_interval_mag", (DL_FUNC) &_boostedintervals_interval_mag, 2},
+    {"_boostedintervals_interval_mig", (DL_FUNC) &_boostedintervals_interval_mig, 2},
+    {"_boostedintervals_interval_distance", (DL_FUNC) &_boostedintervals_interval_distance, 4},
     {"_boostedintervals_interval_tan", (DL_FUNC) &_boostedintervals_interval_tan, 2},
     {"_boostedintervals_interval_asin", (DL_FUNC) &_boostedintervals_interval_asin, 2},
     {"_boostedintervals_interval_acos", (DL_FUNC) &_boostedintervals_interval_acos, 2},

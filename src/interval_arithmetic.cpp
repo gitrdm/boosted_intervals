@@ -610,6 +610,197 @@ Rcpp::List interval_pow(Rcpp::NumericVector lower, Rcpp::NumericVector upper,
 }
 
 // [[Rcpp::export]]
+Rcpp::LogicalVector interval_zero_in(Rcpp::NumericVector lower,
+                                     Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::LogicalVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_LOGICAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    out[i] = interval_contains_zero(intv);
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::LogicalVector interval_is_empty(Rcpp::NumericVector lower,
+                                      Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::LogicalVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    out[i] = Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i]);
+  }
+  return out;
+}
+
+namespace {
+
+inline bool is_na_interval(double lower, double upper) {
+  return Rcpp::NumericVector::is_na(lower) || Rcpp::NumericVector::is_na(upper);
+}
+
+} // namespace
+
+// [[Rcpp::export]]
+Rcpp::LogicalVector interval_subset(Rcpp::NumericVector outer_lower, Rcpp::NumericVector outer_upper,
+                                    Rcpp::NumericVector inner_lower, Rcpp::NumericVector inner_upper) {
+  validate_pair_lengths(outer_lower.size(), outer_upper.size());
+  validate_pair_lengths(inner_lower.size(), inner_upper.size());
+  const std::size_t n = resolve_length(outer_lower.size(), inner_lower.size());
+
+  Rcpp::LogicalVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double o_lower = get_numeric_with_recycle(outer_lower, i);
+    const double o_upper = get_numeric_with_recycle(outer_upper, i);
+    const double i_lower = get_numeric_with_recycle(inner_lower, i);
+    const double i_upper = get_numeric_with_recycle(inner_upper, i);
+
+    const bool outer_na = is_na_interval(o_lower, o_upper);
+    const bool inner_na = is_na_interval(i_lower, i_upper);
+
+    if (inner_na) {
+      out[i] = true;
+      continue;
+    }
+    if (outer_na) {
+      out[i] = false;
+      continue;
+    }
+
+    Interval outer = make_interval(o_lower, o_upper);
+    Interval inner = make_interval(i_lower, i_upper);
+    out[i] = (outer.lower() <= inner.lower()) && (outer.upper() >= inner.upper());
+  }
+
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::LogicalVector interval_proper_subset(Rcpp::NumericVector outer_lower, Rcpp::NumericVector outer_upper,
+                                           Rcpp::NumericVector inner_lower, Rcpp::NumericVector inner_upper) {
+  validate_pair_lengths(outer_lower.size(), outer_upper.size());
+  validate_pair_lengths(inner_lower.size(), inner_upper.size());
+  const std::size_t n = resolve_length(outer_lower.size(), inner_lower.size());
+
+  Rcpp::LogicalVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double o_lower = get_numeric_with_recycle(outer_lower, i);
+    const double o_upper = get_numeric_with_recycle(outer_upper, i);
+    const double i_lower = get_numeric_with_recycle(inner_lower, i);
+    const double i_upper = get_numeric_with_recycle(inner_upper, i);
+
+    const bool outer_na = is_na_interval(o_lower, o_upper);
+    const bool inner_na = is_na_interval(i_lower, i_upper);
+
+    if (inner_na) {
+      out[i] = !outer_na;
+      continue;
+    }
+    if (outer_na) {
+      out[i] = false;
+      continue;
+    }
+
+    Interval outer = make_interval(o_lower, o_upper);
+    Interval inner = make_interval(i_lower, i_upper);
+    const bool contains = (outer.lower() <= inner.lower()) && (outer.upper() >= inner.upper());
+    const bool equal_bounds = (outer.lower() == inner.lower()) && (outer.upper() == inner.upper());
+    out[i] = contains && !equal_bounds;
+  }
+
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_radius(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    out[i] = (intv.upper() - intv.lower()) / 2.0;
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_mag(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval abs_intv = boost::numeric::abs(intv);
+    out[i] = abs_intv.upper();
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_mig(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval abs_intv = boost::numeric::abs(intv);
+    out[i] = abs_intv.lower();
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_distance(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1,
+                                      Rcpp::NumericVector lower2, Rcpp::NumericVector upper2) {
+  validate_pair_lengths(lower1.size(), upper1.size());
+  validate_pair_lengths(lower2.size(), upper2.size());
+  const std::size_t n = resolve_length(lower1.size(), lower2.size());
+
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double a_lower = get_numeric_with_recycle(lower1, i);
+    const double a_upper = get_numeric_with_recycle(upper1, i);
+    const double b_lower = get_numeric_with_recycle(lower2, i);
+    const double b_upper = get_numeric_with_recycle(upper2, i);
+
+    if (is_na_interval(a_lower, a_upper) || is_na_interval(b_lower, b_upper)) {
+      out[i] = NA_REAL;
+      continue;
+    }
+
+    Interval a = make_interval(a_lower, a_upper);
+    Interval b = make_interval(b_lower, b_upper);
+
+    if (a.upper() < b.lower()) {
+      out[i] = b.lower() - a.upper();
+    } else if (b.upper() < a.lower()) {
+      out[i] = a.lower() - b.upper();
+    } else {
+      out[i] = 0.0;
+    }
+  }
+
+  return out;
+}
+
+// [[Rcpp::export]]
 Rcpp::List interval_tan(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
   const std::size_t n = lower.size();

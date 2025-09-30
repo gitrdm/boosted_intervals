@@ -246,3 +246,37 @@ test_that("hyperbolic functions propagate dimensionless input", {
   expect_equal(units::drop_units(lower_bounds(atanh_res)), atanh(-0.5), tolerance = 1e-12)
   expect_equal(units::drop_units(upper_bounds(atanh_res)), atanh(0.5), tolerance = 1e-12)
 })
+
+test_that("interval diagnostics report containment and emptiness", {
+  intervals <- units_interval(c(-1, 2), c(1, 3), unit = "m")
+  expect_identical(zero_in(intervals), c(TRUE, FALSE))
+
+  empty <- interval_intersection(intervals[1], units_interval(10, 12, unit = "m"))
+  expect_true(is_empty(empty))
+  expect_identical(is_empty(intervals), c(FALSE, FALSE))
+
+  outer <- units_interval(c(0, 5), c(10, 9), unit = "m")
+  inner <- units_interval(c(2, 6), c(4, 7), unit = "m")
+  expect_identical(is_subset(outer, inner), c(TRUE, TRUE))
+  expect_identical(is_proper_subset(outer, inner), c(TRUE, TRUE))
+  expect_identical(is_subset(inner, outer), c(FALSE, FALSE))
+})
+
+test_that("radius, mag, mig, and distance match analytic expectations", {
+  x <- units_interval(-4, -1, unit = "s")
+  expect_equal(radius(x), units::set_units(rep(1.5, length(x)), "s"))
+  expect_equal(mag(x), units::set_units(rep(4, length(x)), "s"))
+  expect_equal(mig(x), units::set_units(rep(1, length(x)), "s"))
+
+  spans_zero <- units_interval(-2, 3, unit = "s")
+  expect_equal(mig(spans_zero), units::set_units(0, "s"))
+
+  a <- units_interval(0, 1, unit = "m")
+  b <- units_interval(2, 4, unit = "m")
+  expect_equal(distance(a, b), units::set_units(1, "m"))
+  expect_equal(distance(b, a), units::set_units(1, "m"))
+  expect_equal(distance(a, a), units::set_units(0, "m"))
+
+  overlap <- units_interval(0.5, 1.5, unit = "m")
+  expect_equal(distance(a, overlap), units::set_units(0, "m"))
+})

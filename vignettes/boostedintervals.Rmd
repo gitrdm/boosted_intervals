@@ -146,12 +146,20 @@ hull
 
 ## Visualization-ready summaries
 
-Utilities such as `width()` and `midpoint()` return `units` vectors that can be
-fed directly into plotting pipelines or summary tables.
+Utilities such as `width()`, `midpoint()`, `radius()`, `mag()`, `mig()`, and
+`distance()` return `units` vectors that can be fed directly into plotting
+pipelines or summary tables, while `zero_in()` surfaces Boost's diagnostic for
+intervals spanning zero.
 
 ```{r}
 width(sum_interval)
 midpoint(other_width)
+
+radius(sum_interval)
+mag(direction)
+mig(direction)
+distance(width_a, width_b)
+zero_in(direction)
 ```
 
 ## Next steps

@@ -113,6 +113,38 @@ interval_pow <- function(lower, upper, exponent) {
     .Call(`_boostedintervals_interval_pow`, lower, upper, exponent)
 }
 
+interval_zero_in <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_zero_in`, lower, upper)
+}
+
+interval_is_empty <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_is_empty`, lower, upper)
+}
+
+interval_subset <- function(outer_lower, outer_upper, inner_lower, inner_upper) {
+    .Call(`_boostedintervals_interval_subset`, outer_lower, outer_upper, inner_lower, inner_upper)
+}
+
+interval_proper_subset <- function(outer_lower, outer_upper, inner_lower, inner_upper) {
+    .Call(`_boostedintervals_interval_proper_subset`, outer_lower, outer_upper, inner_lower, inner_upper)
+}
+
+interval_radius <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_radius`, lower, upper)
+}
+
+interval_mag <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_mag`, lower, upper)
+}
+
+interval_mig <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_mig`, lower, upper)
+}
+
+interval_distance <- function(lower1, upper1, lower2, upper2) {
+    .Call(`_boostedintervals_interval_distance`, lower1, upper1, lower2, upper2)
+}
+
 interval_tan <- function(lower, upper) {
     .Call(`_boostedintervals_interval_tan`, lower, upper)
 }
