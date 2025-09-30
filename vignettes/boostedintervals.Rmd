@@ -82,19 +82,22 @@ volume_interval <- width_a ^ 3
 volume_interval
 units(volume_interval$lower)
 
-angles <- units_interval(0, pi / 6, unit = "1")
+angles <- units_interval(0, pi / 6, unit = "rad")
 sin(angles)
 cos(angles)
+
+sin(convert_units(angles, "degree"))
 
 growth <- units_interval(0, 0.25, unit = "1")
 exp(growth)
 log(units_interval(1, 5, unit = "1"))
 ```
 
-Exponentials, logarithms, and trigonometric functions all require
-dimensionless intervals. Attempting to apply them to intervals carrying
-physical units will raise an error, helping catch inconsistent analyses
-early.
+Exponentials and logarithms require dimensionless intervals. Trigonometric
+functions accept angles expressed in radians or any units convertible to
+radians, converting behind the scenes before evaluating the function. If
+inputs carry incompatible units (for instance, meters), an informative error
+is raised to help catch inconsistent analyses early.
 
 Comparison operators recycle operands, align units, and return logical vectors.
 

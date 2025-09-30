@@ -338,8 +338,10 @@ interval_union <- function(x, y) {
 #' The `Math` group generic supports a subset of unary mathematical
 #' transformations. `abs()` preserves units while `sqrt()` expects squared
 #' quantities and returns the principal square root with adjusted units.
-#' Dimensionless intervals additionally support `exp()`, `log()`, `log10()`,
-#' `sin()`, and `cos()`, all of which return dimensionless intervals.
+#' Dimensionless intervals additionally support `exp()`, `log()`, and `log10()`.
+#' Trigonometric functions `sin()` and `cos()` accept intervals expressed in
+#' radians (or any units convertible to radians) and return dimensionless
+#' intervals representing the function range.
 #'
 #' @param x A `units_interval` vector.
 #' @param ... Unused.
@@ -347,10 +349,10 @@ interval_union <- function(x, y) {
 #' @export
 Math.units_interval <- function(x, ...) {
   fun <- .Generic
-  numerics <- .drop_units(x)
   base_unit_symbol <- units::deparse_unit(x$lower)[1]
   base_unit <- units::as_units(base_unit_symbol)
   unitless <- units::as_units(1)
+  numerics <- .drop_units(x)
 
   if (fun == "abs") {
     res <- interval_abs(numerics$lower, numerics$upper)
@@ -370,7 +372,7 @@ Math.units_interval <- function(x, ...) {
     ))
   }
 
-  if (fun %in% c("exp", "log", "log10", "sin", "cos")) {
+  if (fun %in% c("exp", "log", "log10")) {
     if (base_unit_symbol != "1") {
       stop(sprintf("Function '%s' requires dimensionless intervals", fun), call. = FALSE)
     }
@@ -378,9 +380,27 @@ Math.units_interval <- function(x, ...) {
       fun,
       "exp" = interval_exp(numerics$lower, numerics$upper),
       "log" = interval_log(numerics$lower, numerics$upper),
-      "log10" = interval_log10(numerics$lower, numerics$upper),
-      "sin" = interval_sin(numerics$lower, numerics$upper),
-      "cos" = interval_cos(numerics$lower, numerics$upper)
+      "log10" = interval_log10(numerics$lower, numerics$upper)
+    )
+    return(.new_units_interval(
+      units::set_units(res$lower, unitless, mode = "standard"),
+      units::set_units(res$upper, unitless, mode = "standard")
+    ))
+  }
+
+  if (fun %in% c("sin", "cos")) {
+    target_unit <- units::as_units("rad")
+    radians <- tryCatch(
+      convert_units(x, target_unit),
+      error = function(e) {
+        stop(sprintf("Function '%s' requires angles convertible to radians", fun), call. = FALSE)
+      }
+    )
+    rad_numerics <- .drop_units(radians)
+    res <- switch(
+      fun,
+      "sin" = interval_sin(rad_numerics$lower, rad_numerics$upper),
+      "cos" = interval_cos(rad_numerics$lower, rad_numerics$upper)
     )
     return(.new_units_interval(
       units::set_units(res$lower, unitless, mode = "standard"),

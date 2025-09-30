@@ -112,17 +112,17 @@ test_that("exp/log/log10 operate on dimensionless intervals", {
   expect_error(log10(units_interval(-1, 2, unit = "1")), "undefined")
 })
 
-test_that("transcendental Math functions require dimensionless input", {
+test_that("transcendental Math functions enforce unit requirements", {
   length_interval <- units_interval(set_units(0, "m"), set_units(1, "m"))
   expect_error(exp(length_interval), "dimensionless intervals")
   expect_error(log(length_interval), "dimensionless intervals")
-  expect_error(sin(length_interval), "dimensionless intervals")
+  expect_error(sin(length_interval), "convertible to radians")
 })
 
-test_that("sin and cos propagate dimensionless bounds", {
-  angle <- units_interval(0, pi / 6, unit = "1")
+test_that("sin and cos accept radians and convertible units", {
+  angle_rad <- units_interval(0, pi / 6, unit = "rad")
 
-  sin_res <- sin(angle)
+  sin_res <- sin(angle_rad)
   expect_equal(units::deparse_unit(lower_bounds(sin_res)), "1")
   expect_equal(
     units::drop_units(lower_bounds(sin_res)),
@@ -134,7 +134,7 @@ test_that("sin and cos propagate dimensionless bounds", {
     tolerance = 1e-12
   )
 
-  cos_res <- cos(angle)
+  cos_res <- cos(angle_rad)
   expect_equal(units::deparse_unit(lower_bounds(cos_res)), "1")
   expect_equal(
     units::drop_units(lower_bounds(cos_res)),
@@ -146,4 +146,12 @@ test_that("sin and cos propagate dimensionless bounds", {
     1,
     tolerance = 1e-12
   )
+
+  angle_deg <- convert_units(angle_rad, "degree")
+  sin_deg <- sin(angle_deg)
+  cos_deg <- cos(angle_deg)
+  expect_equal(units::drop_units(lower_bounds(sin_deg)), units::drop_units(lower_bounds(sin_res)))
+  expect_equal(units::drop_units(upper_bounds(sin_deg)), units::drop_units(upper_bounds(sin_res)))
+  expect_equal(units::drop_units(lower_bounds(cos_deg)), units::drop_units(lower_bounds(cos_res)))
+  expect_equal(units::drop_units(upper_bounds(cos_deg)), units::drop_units(upper_bounds(cos_res)))
 })
