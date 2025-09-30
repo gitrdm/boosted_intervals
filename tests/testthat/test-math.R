@@ -260,15 +260,24 @@ test_that("interval diagnostics report containment and emptiness", {
   expect_identical(is_subset(outer, inner), c(TRUE, TRUE))
   expect_identical(is_proper_subset(outer, inner), c(TRUE, TRUE))
   expect_identical(is_subset(inner, outer), c(FALSE, FALSE))
+  expect_identical(is_superset(outer, inner), c(TRUE, TRUE))
+  expect_identical(is_proper_superset(outer, inner), c(TRUE, TRUE))
+  expect_identical(is_superset(inner, outer), c(FALSE, FALSE))
+
+  whole <- whole_interval(like = outer)
+  expect_identical(is_whole(whole), rep(TRUE, length(whole)))
+  expect_false(any(is_whole(intervals)))
 })
 
 test_that("radius, mag, mig, and distance match analytic expectations", {
   x <- units_interval(-4, -1, unit = "s")
   expect_equal(radius(x), units::set_units(rep(1.5, length(x)), "s"))
+  expect_equal(norm(x), units::set_units(rep(4, length(x)), "s"))
   expect_equal(mag(x), units::set_units(rep(4, length(x)), "s"))
   expect_equal(mig(x), units::set_units(rep(1, length(x)), "s"))
 
   spans_zero <- units_interval(-2, 3, unit = "s")
+  expect_equal(norm(spans_zero), units::set_units(3, "s"))
   expect_equal(mig(spans_zero), units::set_units(0, "s"))
 
   a <- units_interval(0, 1, unit = "m")

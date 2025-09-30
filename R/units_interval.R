@@ -100,6 +100,37 @@
   .new_units_interval(lower, upper)
 }
 
+.resolve_interval_spec <- function(unit = NULL, length = NULL, like = NULL, allow_zero = TRUE) {
+  if (!is.null(like)) {
+    if (!inherits(like, "units_interval")) {
+      stop("Argument 'like' must be a units_interval when provided.", call. = FALSE)
+    }
+    base_unit <- units(like$lower)
+    target_length <- length(like$lower)
+    return(list(unit = base_unit, length = target_length))
+  }
+
+  if (is.null(unit)) {
+    stop("Supply either 'unit' or an interval via 'like'.", call. = FALSE)
+  }
+
+  base_unit <- if (inherits(unit, "units")) unit else units::as_units(unit)
+
+  if (is.null(length)) {
+    target_length <- 1L
+  } else {
+    if (!is.numeric(length) || length < 0 || (length %% 1) != 0) {
+      stop("Argument 'length' must be a non-negative integer.", call. = FALSE)
+    }
+    if (!allow_zero && length == 0) {
+      stop("Argument 'length' must be positive.", call. = FALSE)
+    }
+    target_length <- as.integer(length)
+  }
+
+  list(unit = base_unit, length = target_length)
+}
+
 #' Create a unit-aware interval
 #'
 #' Construct a vector of closed intervals with explicit units. Inputs may be
@@ -170,6 +201,41 @@ as_units_interval <- function(x, unit = NULL) {
     return(units_interval(x, x, unit = unit))
   }
   stop("Cannot coerce object of class '", paste(class(x), collapse = ","), "' to a units_interval.", call. = FALSE)
+}
+
+#' Construct empty or whole unit-aware intervals
+#'
+#' These helpers produce canonical empty or whole intervals while preserving
+#' unit metadata. They are convenient when seeding algorithms that refine
+#' intervals iteratively or when representing missing measurements explicitly.
+#'
+#' @param unit Unit to attach to the interval. Accepts a character string or a
+#'   `units` object. Ignored when `like` is supplied.
+#' @param length Desired length of the resulting interval vector. Defaults to
+#'   1 when `like` is not provided.
+#' @param like Optional `units_interval` whose units (and length) should be
+#'   reused. When supplied, `unit` and `length` are ignored.
+#' @return A `units_interval` vector containing either empty (all `NA`) or whole
+#'   (infinite) intervals.
+#' @name special-interval-constructors
+NULL
+
+#' @rdname special-interval-constructors
+#' @export
+empty_interval <- function(unit = NULL, length = NULL, like = NULL) {
+  spec <- .resolve_interval_spec(unit = unit, length = length, like = like)
+  lower <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
+  upper <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
+  .new_units_interval(lower, upper)
+}
+
+#' @rdname special-interval-constructors
+#' @export
+whole_interval <- function(unit = NULL, length = NULL, like = NULL) {
+  spec <- .resolve_interval_spec(unit = unit, length = length, like = like)
+  lower <- units::set_units(rep(-Inf, spec$length), spec$unit, mode = "standard")
+  upper <- units::set_units(rep(Inf, spec$length), spec$unit, mode = "standard")
+  .new_units_interval(lower, upper)
 }
 
 #' Length of an interval vector

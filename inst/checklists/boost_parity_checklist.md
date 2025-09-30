@@ -24,8 +24,8 @@ Use this checklist to track parity between the Boost Interval library and the `b
 - [x] Relational comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`)
 - [x] Overlap detection (`overlaps`)
 - [x] Interval/point containment (`contains`)
-- [~] Interval subset / superset predicates (`subset`, `proper_subset`, `superset`)
-- [~] Empty/whole interval constructors & checks (`empty`, `whole`, `is_empty`, `is_whole`)
+- [x] Interval subset / superset predicates (`subset`, `proper_subset`, `superset`)
+- [x] Empty/whole interval constructors & checks (`empty`, `whole`, `is_empty`, `is_whole`)
 - [x] Zero-in / sign checks (`zero_in`, `in_zero`, etc.)
 
 ## Metrics & Summaries
@@ -34,7 +34,7 @@ Use this checklist to track parity between the Boost Interval library and the `b
 - [x] Midpoint (`midpoint`)
 - [x] Radius / semi-width (`rad`)
 - [ ] Median (`median` / `median_point`)
-- [~] Norm / magnitude / mig helpers (`norm`, `mag`, `mig`)
+- [x] Norm / magnitude / mig helpers (`norm`, `mag`, `mig`)
 - [x] Distance metrics (`distance`)
 - [ ] Bisect / inflate utilities (`bisect`, `inflate`)
 

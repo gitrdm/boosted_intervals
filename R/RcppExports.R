@@ -133,6 +133,10 @@ interval_radius <- function(lower, upper) {
     .Call(`_boostedintervals_interval_radius`, lower, upper)
 }
 
+interval_norm <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_norm`, lower, upper)
+}
+
 interval_mag <- function(lower, upper) {
     .Call(`_boostedintervals_interval_mag`, lower, upper)
 }

@@ -733,6 +733,22 @@ Rcpp::NumericVector interval_radius(Rcpp::NumericVector lower, Rcpp::NumericVect
 }
 
 // [[Rcpp::export]]
+Rcpp::NumericVector interval_norm(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    out[i] = boost::numeric::norm(intv);
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
 Rcpp::NumericVector interval_mag(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
   const std::size_t n = lower.size();

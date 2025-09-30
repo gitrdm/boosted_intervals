@@ -144,18 +144,33 @@ hull <- interval_union(sum_interval, other_width)
 hull
 ```
 
+When you need sentinel values, `empty_interval()` and `whole_interval()`
+construct canonical extremes while retaining unit metadata. Superset helpers
+mirror the subset predicates and `is_whole()` identifies fully unbounded
+intervals.
+
+```{r}
+empty_like_sum <- empty_interval(like = sum_interval)
+whole_like_sum <- whole_interval(like = sum_interval)
+
+is_empty(empty_like_sum)
+is_whole(whole_like_sum)
+is_superset(whole_like_sum, sum_interval)
+```
+
 ## Visualization-ready summaries
 
-Utilities such as `width()`, `midpoint()`, `radius()`, `mag()`, `mig()`, and
-`distance()` return `units` vectors that can be fed directly into plotting
-pipelines or summary tables, while `zero_in()` surfaces Boost's diagnostic for
-intervals spanning zero.
+Utilities such as `width()`, `midpoint()`, `radius()`, `norm()`, `mag()`,
+`mig()`, and `distance()` return `units` vectors that can be fed directly into
+plotting pipelines or summary tables, while diagnostics like `zero_in()` and
+`is_whole()` surface common Boost predicates.
 
 ```{r}
 width(sum_interval)
 midpoint(other_width)
 
 radius(sum_interval)
+norm(direction)
 mag(direction)
 mig(direction)
 distance(width_a, width_b)

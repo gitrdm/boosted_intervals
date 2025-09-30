@@ -265,6 +265,37 @@ radius.units_interval <- function(x) {
 #' @name magnitude-helpers
 NULL
 
+#' Interval norm
+#'
+#' Compute the supremum norm of a `units_interval`. For other objects this
+#' function defers to [base::norm()] so existing matrix workflows continue to
+#' operate as usual.
+#'
+#' @param x Object whose norm should be computed.
+#' @param type Norm type (mirroring [base::norm()]). All supported options map
+#'   to the interval sup norm when `x` is a `units_interval`.
+#' @param ... Additional arguments passed along to [base::norm()].
+#' @return For interval inputs, a `units` vector containing the element-wise
+#'   norms. Otherwise, the result of [base::norm()].
+#' @seealso [base::norm()]
+#' @export
+norm <- function(x, type = c("O", "I", "F", "M", "2"), ...) {
+  if (inherits(x, "units_interval")) {
+    return(.norm_units_interval(x, type))
+  }
+  base::norm(x, type = type, ...)
+}
+
+.norm_units_interval <- function(x, type) {
+  if (length(type) > 1L) {
+    type <- type[1L]
+  }
+  type <- match.arg(type, c("O", "I", "F", "M", "2", "max"))
+  numerics <- .drop_units(x)
+  res <- interval_norm(numerics$lower, numerics$upper)
+  units::set_units(res, units(x$lower), mode = "standard")
+}
+
 #' @rdname magnitude-helpers
 #' @export
 mag <- function(x) {
@@ -316,13 +347,17 @@ distance <- function(x, y) {
 #' Interval diagnostics
 #'
 #' `zero_in()` reports whether an interval contains zero. `is_empty()` checks
-#' for empty intervals (represented as `NA` bounds in this package). `is_subset`
-#' and `is_proper_subset` surface Boost's containment predicates.
+#' for empty intervals (represented as `NA` bounds in this package).
+#' `is_subset()` / `is_proper_subset()` and their superset counterparts surface
+#' Boost's containment predicates. `is_whole()` identifies intervals that span
+#' the entire real line (i.e., `[-Inf, Inf]`).
 #'
 #' @param x,y `units_interval` objects.
 #' @return For `zero_in()` and `is_empty()`, a logical vector. For
 #'   `is_subset()` / `is_proper_subset()`, a logical vector indicating whether
-#'   the condition holds element-wise.
+#'   the condition holds element-wise. `is_superset()` and
+#'   `is_proper_superset()` return analogous results with arguments swapped.
+#'   `is_whole()` returns `TRUE` where intervals are unbounded above and below.
 #' @name interval-diagnostics
 NULL
 
@@ -368,6 +403,47 @@ is_proper_subset <- function(x, y) {
   x_num <- .drop_units(pair$x)
   y_num <- .drop_units(pair$y)
   as.vector(interval_proper_subset(x_num$lower, x_num$upper, y_num$lower, y_num$upper))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_superset <- function(x, y) {
+  UseMethod("is_superset")
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_superset.units_interval <- function(x, y) {
+  is_subset(x, y)
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_proper_superset <- function(x, y) {
+  UseMethod("is_proper_superset")
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_proper_superset.units_interval <- function(x, y) {
+  is_proper_subset(x, y)
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_whole <- function(x) {
+  UseMethod("is_whole")
+}
+
+#' @rdname interval-diagnostics
+#' @export
+is_whole.units_interval <- function(x) {
+  numerics <- .drop_units(x)
+  lower_inf <- is.infinite(numerics$lower) & numerics$lower < 0
+  upper_inf <- is.infinite(numerics$upper) & numerics$upper > 0
+  lower_inf[is.na(lower_inf)] <- FALSE
+  upper_inf[is.na(upper_inf)] <- FALSE
+  lower_inf & upper_inf
 }
 
 # Containment ---------------------------------------------------------------

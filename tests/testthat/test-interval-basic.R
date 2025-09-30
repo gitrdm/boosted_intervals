@@ -84,3 +84,21 @@ test_that("width and midpoint behave as expected", {
   expect_equal(width(a), set_units(c(2, 2), "m"))
   expect_equal(midpoint(a), set_units(c(1, 0), "m"))
 })
+
+test_that("empty and whole interval constructors respect units", {
+  empty_two <- empty_interval(unit = "m", length = 2)
+  expect_equal(length(empty_two), 2L)
+  expect_true(all(is_empty(empty_two)))
+  expect_false(any(is_whole(empty_two)))
+
+  base <- units_interval(0, 1, unit = "m")
+  empty_like <- empty_interval(like = base)
+  expect_equal(units::deparse_unit(empty_like$lower), "m")
+  expect_identical(length(empty_like), length(base))
+
+  whole <- whole_interval(like = base)
+  expect_true(all(is_whole(whole)))
+  expect_true(all(is_superset(whole, base)))
+  expect_true(all(is_proper_superset(whole, base)))
+  expect_false(any(is_proper_superset(base, whole)))
+})

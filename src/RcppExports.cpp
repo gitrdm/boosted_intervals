@@ -438,6 +438,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_norm
+Rcpp::NumericVector interval_norm(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_norm(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_norm(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_mag
 Rcpp::NumericVector interval_mag(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
 RcppExport SEXP _boostedintervals_interval_mag(SEXP lowerSEXP, SEXP upperSEXP) {
@@ -631,6 +643,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_subset", (DL_FUNC) &_boostedintervals_interval_subset, 4},
     {"_boostedintervals_interval_proper_subset", (DL_FUNC) &_boostedintervals_interval_proper_subset, 4},
     {"_boostedintervals_interval_radius", (DL_FUNC) &_boostedintervals_interval_radius, 2},
+    {"_boostedintervals_interval_norm", (DL_FUNC) &_boostedintervals_interval_norm, 2},
     {"_boostedintervals_interval_mag", (DL_FUNC) &_boostedintervals_interval_mag, 2},
     {"_boostedintervals_interval_mig", (DL_FUNC) &_boostedintervals_interval_mig, 2},
     {"_boostedintervals_interval_distance", (DL_FUNC) &_boostedintervals_interval_distance, 4},
