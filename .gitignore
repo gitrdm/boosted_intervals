@@ -1,0 +1,38 @@
+# RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Build artifacts
+*.tar.gz
+*.Rcheck/
+src/*.o
+src/*.so
+src/*.dll
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*~
+
+# Logs
+*.log
+
+# R Markdown
+*_cache/
+*_files/
+
+# Package documentation (if auto-generated)
+inst/doc/
+man/*.Rd
+
+# Vignettes
+vignettes/*.html
+vignettes/*.pdf

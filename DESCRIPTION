@@ -1,0 +1,19 @@
+Package: boostedintervals
+Title: Interval Arithmetic with Units Using Boost
+Version: 0.1.0
+Authors@R: person(given = "Your", family = "Name", email = "your.email@example.com", role = c("aut", "cre"))
+Author: Your Name
+Maintainer: Your Name <your.email@example.com>
+Description: This package provides interval arithmetic combined with unit management,
+    leveraging Boost.Interval for rigorous computations via Rcpp and the units package
+    for flexible unit handling in R.
+Depends: R (>= 4.0.0)
+Imports: units, Rcpp
+Suggests: testthat (>= 3.0.0), roxygen2, knitr, rmarkdown
+LinkingTo: Rcpp
+VignetteBuilder: knitr
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+
