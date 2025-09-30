@@ -17,6 +17,38 @@ interval_divide <- function(lower1, upper1, lower2, upper2) {
     .Call(`_boostedintervals_interval_divide`, lower1, upper1, lower2, upper2)
 }
 
+interval_exp <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_exp`, lower, upper)
+}
+
+interval_expm1 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_expm1`, lower, upper)
+}
+
+interval_log <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log`, lower, upper)
+}
+
+interval_log10 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log10`, lower, upper)
+}
+
+interval_log1p <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log1p`, lower, upper)
+}
+
+interval_log2 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log2`, lower, upper)
+}
+
+interval_sin <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_sin`, lower, upper)
+}
+
+interval_cos <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_cos`, lower, upper)
+}
+
 interval_negate <- function(lower, upper) {
     .Call(`_boostedintervals_interval_negate`, lower, upper)
 }
@@ -81,23 +113,43 @@ interval_pow <- function(lower, upper, exponent) {
     .Call(`_boostedintervals_interval_pow`, lower, upper, exponent)
 }
 
-interval_exp <- function(lower, upper) {
-    .Call(`_boostedintervals_interval_exp`, lower, upper)
+interval_tan <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_tan`, lower, upper)
 }
 
-interval_log <- function(lower, upper) {
-    .Call(`_boostedintervals_interval_log`, lower, upper)
+interval_asin <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_asin`, lower, upper)
 }
 
-interval_log10 <- function(lower, upper) {
-    .Call(`_boostedintervals_interval_log10`, lower, upper)
+interval_acos <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_acos`, lower, upper)
 }
 
-interval_sin <- function(lower, upper) {
-    .Call(`_boostedintervals_interval_sin`, lower, upper)
+interval_atan <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_atan`, lower, upper)
 }
 
-interval_cos <- function(lower, upper) {
-    .Call(`_boostedintervals_interval_cos`, lower, upper)
+interval_sinh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_sinh`, lower, upper)
+}
+
+interval_cosh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_cosh`, lower, upper)
+}
+
+interval_tanh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_tanh`, lower, upper)
+}
+
+interval_asinh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_asinh`, lower, upper)
+}
+
+interval_acosh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_acosh`, lower, upper)
+}
+
+interval_atanh <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_atanh`, lower, upper)
 }
 

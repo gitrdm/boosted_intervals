@@ -214,6 +214,24 @@ Rcpp::List interval_exp(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
 }
 
 // [[Rcpp::export]]
+Rcpp::List interval_expm1(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  const Interval one(1.0, 1.0);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::exp(intv) - one;
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
 Rcpp::List interval_log(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
   const std::size_t n = lower.size();
@@ -245,6 +263,47 @@ Rcpp::List interval_log10(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
       Rcpp::stop("log10 is undefined for intervals at or below zero");
     }
     Interval res = boost::numeric::log(intv) / std::log(10.0);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_log1p(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  const Interval one(1.0, 1.0);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() <= -1.0) {
+      Rcpp::stop("log1p is undefined for intervals at or below -1");
+    }
+    Interval res = boost::numeric::log(intv + one);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_log2(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() <= 0.0) {
+      Rcpp::stop("log2 is undefined for intervals at or below zero");
+    }
+    Interval res = boost::numeric::log(intv) / std::log(2.0);
     out_lower[i] = res.lower();
     out_upper[i] = res.upper();
   }
@@ -542,6 +601,178 @@ Rcpp::List interval_pow(Rcpp::NumericVector lower, Rcpp::NumericVector upper,
       Rcpp::stop("Negative exponents are not defined for intervals spanning zero");
     }
     Interval res = pow_integer(intv, power);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_tan(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::tan(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_asin(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() < -1.0 || intv.upper() > 1.0) {
+      Rcpp::stop("asin is defined only for intervals within [-1, 1]");
+    }
+    Interval res = boost::numeric::asin(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_acos(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() < -1.0 || intv.upper() > 1.0) {
+      Rcpp::stop("acos is defined only for intervals within [-1, 1]");
+    }
+    Interval res = boost::numeric::acos(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_atan(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::atan(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_sinh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::sinh(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_cosh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::cosh(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_tanh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::tanh(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_asinh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::asinh(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_acosh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() < 1.0) {
+      Rcpp::stop("acosh is defined only for intervals with lower bound >= 1");
+    }
+    Interval res = boost::numeric::acosh(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_atanh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() <= -1.0 || intv.upper() >= 1.0) {
+      Rcpp::stop("atanh is defined only for intervals within (-1, 1)");
+    }
+    Interval res = boost::numeric::atanh(intv);
     out_lower[i] = res.lower();
     out_upper[i] = res.upper();
   }

@@ -338,10 +338,13 @@ interval_union <- function(x, y) {
 #' The `Math` group generic supports a subset of unary mathematical
 #' transformations. `abs()` preserves units while `sqrt()` expects squared
 #' quantities and returns the principal square root with adjusted units.
-#' Dimensionless intervals additionally support `exp()`, `log()`, and `log10()`.
-#' Trigonometric functions `sin()` and `cos()` accept intervals expressed in
-#' radians (or any units convertible to radians) and return dimensionless
-#' intervals representing the function range.
+#' Dimensionless intervals additionally support `exp()`, `expm1()`, `log()`,
+#' `log1p()`, `log2()`, `log10()`, `sinh()`, `cosh()`, `tanh()`,
+#' `asinh()`, `acosh()`, and `atanh()`. Trigonometric
+#' functions `sin()`, `cos()`, and `tan()` accept intervals expressed in radians
+#' (or any units convertible to radians) and return dimensionless results.
+#' Inverse trigonometric functions `asin()`, `acos()`, and `atan()` operate on
+#' dimensionless inputs and return angles in radians.
 #'
 #' @param x A `units_interval` vector.
 #' @param ... Unused.
@@ -372,15 +375,25 @@ Math.units_interval <- function(x, ...) {
     ))
   }
 
-  if (fun %in% c("exp", "log", "log10")) {
+  if (fun %in% c("exp", "expm1", "log", "log1p", "log2", "log10",
+                 "sinh", "cosh", "tanh", "asinh", "acosh", "atanh")) {
     if (base_unit_symbol != "1") {
       stop(sprintf("Function '%s' requires dimensionless intervals", fun), call. = FALSE)
     }
     res <- switch(
       fun,
-      "exp" = interval_exp(numerics$lower, numerics$upper),
+  "exp" = interval_exp(numerics$lower, numerics$upper),
+      "expm1" = interval_expm1(numerics$lower, numerics$upper),
       "log" = interval_log(numerics$lower, numerics$upper),
-      "log10" = interval_log10(numerics$lower, numerics$upper)
+      "log1p" = interval_log1p(numerics$lower, numerics$upper),
+      "log2" = interval_log2(numerics$lower, numerics$upper),
+      "log10" = interval_log10(numerics$lower, numerics$upper),
+      "sinh" = interval_sinh(numerics$lower, numerics$upper),
+      "cosh" = interval_cosh(numerics$lower, numerics$upper),
+      "tanh" = interval_tanh(numerics$lower, numerics$upper),
+      "asinh" = interval_asinh(numerics$lower, numerics$upper),
+      "acosh" = interval_acosh(numerics$lower, numerics$upper),
+      "atanh" = interval_atanh(numerics$lower, numerics$upper)
     )
     return(.new_units_interval(
       units::set_units(res$lower, unitless, mode = "standard"),
@@ -388,7 +401,7 @@ Math.units_interval <- function(x, ...) {
     ))
   }
 
-  if (fun %in% c("sin", "cos")) {
+  if (fun %in% c("sin", "cos", "tan")) {
     target_unit <- units::as_units("rad")
     radians <- tryCatch(
       convert_units(x, target_unit),
@@ -400,11 +413,29 @@ Math.units_interval <- function(x, ...) {
     res <- switch(
       fun,
       "sin" = interval_sin(rad_numerics$lower, rad_numerics$upper),
-      "cos" = interval_cos(rad_numerics$lower, rad_numerics$upper)
+      "cos" = interval_cos(rad_numerics$lower, rad_numerics$upper),
+      "tan" = interval_tan(rad_numerics$lower, rad_numerics$upper)
     )
     return(.new_units_interval(
       units::set_units(res$lower, unitless, mode = "standard"),
       units::set_units(res$upper, unitless, mode = "standard")
+    ))
+  }
+
+  if (fun %in% c("asin", "acos", "atan")) {
+    if (base_unit_symbol != "1") {
+      stop(sprintf("Function '%s' requires dimensionless intervals", fun), call. = FALSE)
+    }
+    res <- switch(
+      fun,
+      "asin" = interval_asin(numerics$lower, numerics$upper),
+      "acos" = interval_acos(numerics$lower, numerics$upper),
+      "atan" = interval_atan(numerics$lower, numerics$upper)
+    )
+    radians <- units::as_units("rad")
+    return(.new_units_interval(
+      units::set_units(res$lower, radians, mode = "standard"),
+      units::set_units(res$upper, radians, mode = "standard")
     ))
   }
 

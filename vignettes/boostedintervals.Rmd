@@ -85,19 +85,34 @@ units(volume_interval$lower)
 angles <- units_interval(0, pi / 6, unit = "rad")
 sin(angles)
 cos(angles)
+tan(angles)
 
 sin(convert_units(angles, "degree"))
 
+direction <- units_interval(-0.5, 0.5, unit = "1")
+asin(direction)
+acos(direction)
+atan(direction)
+
 growth <- units_interval(0, 0.25, unit = "1")
 exp(growth)
+expm1(growth)
 log(units_interval(1, 5, unit = "1"))
+log1p(units_interval(0, 0.5, unit = "1"))
+log2(units_interval(1, 8, unit = "1"))
+tanh(growth)
+asinh(units_interval(-0.2, 0.2, unit = "1"))
 ```
 
-Exponentials and logarithms require dimensionless intervals. Trigonometric
-functions accept angles expressed in radians or any units convertible to
-radians, converting behind the scenes before evaluating the function. If
-inputs carry incompatible units (for instance, meters), an informative error
-is raised to help catch inconsistent analyses early.
+Exponentials, hyperbolic functions, and logarithms require dimensionless
+intervals. That includes the expanded family of helpers shown above:
+`expm1()`, `log1p()`, and `log2()` alongside their `exp()`, `log()`, and
+`log10()` counterparts. Trigonometric functions accept angles expressed in
+radians or any units convertible to radians, converting behind the scenes
+before evaluating the function. Inverse trigonometric functions consume
+dimensionless inputs but return angles in radians. If inputs carry
+incompatible units (for instance, meters), an informative error is raised to
+help catch inconsistent analyses early.
 
 Comparison operators recycle operands, align units, and return logical vectors.
 

@@ -155,3 +155,94 @@ test_that("sin and cos accept radians and convertible units", {
   expect_equal(units::drop_units(lower_bounds(cos_deg)), units::drop_units(lower_bounds(cos_res)))
   expect_equal(units::drop_units(upper_bounds(cos_deg)), units::drop_units(upper_bounds(cos_res)))
 })
+
+test_that("tan produces bounded results away from singularities", {
+  angle <- units_interval(0, pi / 4, unit = "rad")
+  tan_res <- tan(angle)
+  expect_equal(units::deparse_unit(lower_bounds(tan_res)), "1")
+  expect_equal(units::drop_units(lower_bounds(tan_res)), 0, tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(tan_res)), tan(pi / 4), tolerance = 1e-12)
+})
+
+test_that("inverse trig functions return radians", {
+  dimless <- units_interval(-0.5, 0.5, unit = "1")
+
+  asin_res <- asin(dimless)
+  expect_equal(units::deparse_unit(lower_bounds(asin_res)), "rad")
+  expect_equal(units::drop_units(lower_bounds(asin_res)), asin(-0.5), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(asin_res)), asin(0.5), tolerance = 1e-12)
+
+  acos_res <- acos(dimless)
+  expect_equal(units::deparse_unit(lower_bounds(acos_res)), "rad")
+  expect_equal(units::drop_units(upper_bounds(acos_res)), acos(-0.5), tolerance = 1e-12)
+
+  atan_res <- atan(units_interval(-1, 1, unit = "1"))
+  expect_equal(units::deparse_unit(lower_bounds(atan_res)), "rad")
+  expect_equal(units::drop_units(lower_bounds(atan_res)), atan(-1), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(atan_res)), atan(1), tolerance = 1e-12)
+})
+
+test_that("inverse trig and hyperbolic domains enforced", {
+  expect_error(asin(units_interval(-1.5, -1.2, unit = "1")), "within [-1, 1]", fixed = TRUE)
+  expect_error(acos(units_interval(0.5, 1.5, unit = "1")), "within [-1, 1]", fixed = TRUE)
+  expect_error(acosh(units_interval(0.5, 2, unit = "1")), "lower bound >= 1")
+  expect_error(atanh(units_interval(-1, 0.5, unit = "1")), "within (-1, 1)", fixed = TRUE)
+  expect_error(atanh(units_interval(-0.5, 1, unit = "1")), "within (-1, 1)", fixed = TRUE)
+})
+
+test_that("log family applies domain guards", {
+  expect_error(log(units_interval(-1, 1, unit = "1")), "at or below zero", fixed = TRUE)
+  expect_error(log2(units_interval(0, 1, unit = "1")), "at or below zero", fixed = TRUE)
+  expect_error(log1p(units_interval(-2, -1, unit = "1")), "at or below -1", fixed = TRUE)
+})
+
+test_that("exp and log variants operate on dimensionless intervals", {
+  dimless <- units_interval(-0.25, 0.5, unit = "1")
+
+  expm1_res <- expm1(dimless)
+  expect_equal(units::deparse_unit(lower_bounds(expm1_res)), "1")
+  expect_equal(units::drop_units(lower_bounds(expm1_res)), exp(-0.25) - 1, tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(expm1_res)), exp(0.5) - 1, tolerance = 1e-12)
+
+  log1p_res <- log1p(units_interval(0, 0.5, unit = "1"))
+  expect_equal(units::deparse_unit(lower_bounds(log1p_res)), "1")
+  expect_equal(units::drop_units(lower_bounds(log1p_res)), log1p(0), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(log1p_res)), log1p(0.5), tolerance = 1e-12)
+
+  log2_res <- log2(units_interval(1, 8, unit = "1"))
+  expect_equal(units::deparse_unit(lower_bounds(log2_res)), "1")
+  expect_equal(units::drop_units(lower_bounds(log2_res)), log2(1), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(log2_res)), log2(8), tolerance = 1e-12)
+})
+
+test_that("hyperbolic functions propagate dimensionless input", {
+  dimless <- units_interval(-1, 1, unit = "1")
+
+  expect_equal(
+    units::drop_units(lower_bounds(sinh(dimless))),
+    sinh(-1),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    units::drop_units(upper_bounds(sinh(dimless))),
+    sinh(1),
+    tolerance = 1e-12
+  )
+
+  cosh_res <- cosh(dimless)
+  expect_equal(units::deparse_unit(lower_bounds(cosh_res)), "1")
+  expect_equal(units::drop_units(lower_bounds(cosh_res)), 1, tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(cosh_res)), cosh(1), tolerance = 1e-12)
+
+  tanh_res <- tanh(dimless)
+  expect_equal(units::drop_units(lower_bounds(tanh_res)), tanh(-1), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(tanh_res)), tanh(1), tolerance = 1e-12)
+
+  asinh_res <- asinh(dimless)
+  expect_equal(units::drop_units(lower_bounds(asinh_res)), asinh(-1), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(asinh_res)), asinh(1), tolerance = 1e-12)
+
+  atanh_res <- atanh(units_interval(-0.5, 0.5, unit = "1"))
+  expect_equal(units::drop_units(lower_bounds(atanh_res)), atanh(-0.5), tolerance = 1e-12)
+  expect_equal(units::drop_units(upper_bounds(atanh_res)), atanh(0.5), tolerance = 1e-12)
+})
