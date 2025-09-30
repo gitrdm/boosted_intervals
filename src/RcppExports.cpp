@@ -198,6 +198,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_median
+Rcpp::NumericVector interval_median(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_median(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_median(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_equals
 Rcpp::LogicalVector interval_equals(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1, Rcpp::NumericVector lower2, Rcpp::NumericVector upper2);
 RcppExport SEXP _boostedintervals_interval_equals(SEXP lower1SEXP, SEXP upper1SEXP, SEXP lower2SEXP, SEXP upper2SEXP) {
@@ -488,6 +500,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_bisect
+Rcpp::List interval_bisect(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_bisect(SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_bisect(lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_widen
+Rcpp::List interval_widen(Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector expansion);
+RcppExport SEXP _boostedintervals_interval_widen(SEXP lowerSEXP, SEXP upperSEXP, SEXP expansionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type expansion(expansionSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_widen(lower, upper, expansion));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_tan
 Rcpp::List interval_tan(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
 RcppExport SEXP _boostedintervals_interval_tan(SEXP lowerSEXP, SEXP upperSEXP) {
@@ -625,6 +662,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_negate", (DL_FUNC) &_boostedintervals_interval_negate, 2},
     {"_boostedintervals_interval_width", (DL_FUNC) &_boostedintervals_interval_width, 2},
     {"_boostedintervals_interval_midpoint", (DL_FUNC) &_boostedintervals_interval_midpoint, 2},
+    {"_boostedintervals_interval_median", (DL_FUNC) &_boostedintervals_interval_median, 2},
     {"_boostedintervals_interval_equals", (DL_FUNC) &_boostedintervals_interval_equals, 4},
     {"_boostedintervals_interval_less", (DL_FUNC) &_boostedintervals_interval_less, 4},
     {"_boostedintervals_interval_less_equal", (DL_FUNC) &_boostedintervals_interval_less_equal, 4},
@@ -647,6 +685,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_mag", (DL_FUNC) &_boostedintervals_interval_mag, 2},
     {"_boostedintervals_interval_mig", (DL_FUNC) &_boostedintervals_interval_mig, 2},
     {"_boostedintervals_interval_distance", (DL_FUNC) &_boostedintervals_interval_distance, 4},
+    {"_boostedintervals_interval_bisect", (DL_FUNC) &_boostedintervals_interval_bisect, 2},
+    {"_boostedintervals_interval_widen", (DL_FUNC) &_boostedintervals_interval_widen, 3},
     {"_boostedintervals_interval_tan", (DL_FUNC) &_boostedintervals_interval_tan, 2},
     {"_boostedintervals_interval_asin", (DL_FUNC) &_boostedintervals_interval_asin, 2},
     {"_boostedintervals_interval_acos", (DL_FUNC) &_boostedintervals_interval_acos, 2},

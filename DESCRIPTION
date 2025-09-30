@@ -9,7 +9,7 @@ Description: Interval arithmetic combined with unit management,
     leveraging Boost.Interval for rigorous computations via Rcpp and the units package
     for flexible unit handling in R.
 Depends: R (>= 4.0.0)
-Imports: units, Rcpp
+Imports: units, Rcpp, stats
 Suggests: testthat (>= 3.0.0), roxygen2, knitr, rmarkdown
 LinkingTo: Rcpp, BH
 VignetteBuilder: knitr

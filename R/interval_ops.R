@@ -233,6 +233,29 @@ midpoint.units_interval <- function(x) {
   units::set_units(res, units(x$lower), mode = "standard")
 }
 
+#' Interval median
+#'
+#' The median provides a deterministic representative point from each
+#' interval, mirroring Boost's `median()` helper. Compared to
+#' [midpoint()] it avoids overflow by applying directed rounding, making it
+#' suitable for intervals with very large magnitudes.
+#'
+#' @inheritParams midpoint
+#' @param na.rm Logical. Medians of interval vectors are computed element-wise,
+#'   so `na.rm = TRUE` is not supported.
+#' @param ... Ignored; present for compatibility with [stats::median()].
+#' @return A `units` vector containing medians for each interval element.
+#' @importFrom stats median
+#' @export
+median.units_interval <- function(x, na.rm = FALSE, ...) {
+  if (!identical(na.rm, FALSE)) {
+    stop("na.rm is not supported for units_interval medians", call. = FALSE)
+  }
+  numerics <- .drop_units(x)
+  res <- interval_median(numerics$lower, numerics$upper)
+  units::set_units(res, units(x$lower), mode = "standard")
+}
+
 #' Interval radius (semi-width)
 #'
 #' The radius (also called semi-width) of an interval is half of its width.
@@ -340,6 +363,80 @@ distance <- function(x, y) {
   y_num <- .drop_units(pair$y)
   res <- interval_distance(x_num$lower, x_num$upper, y_num$lower, y_num$upper)
   units::set_units(res, base_unit, mode = "standard")
+}
+
+#' Interval subdivision and inflation helpers
+#'
+#' `bisect()` splits each interval at its median into left and right halves.
+#' `inflate()` expands intervals symmetrically by an absolute margin and/or a
+#' relative amount scaled by the interval magnitude. Both helpers preserve unit
+#' metadata while delegating enclosure guarantees to Boost.
+#'
+#' @inheritParams midpoint
+#' @param absolute Absolute widening applied symmetrically to each bound. Accepts
+#'   numerics or `units` vectors convertible to the interval's unit. Defaults to
+#'   zero, meaning no absolute expansion.
+#' @param relative Relative widening factor scaled by the interval magnitude.
+#'   Must be dimensionless and non-negative. Defaults to zero.
+#' @return `bisect()` returns a list with `left` and `right` elements, each a
+#'   `units_interval`. `inflate()` returns a `units_interval` whose bounds have
+#'   been expanded outward.
+#' @name interval-transformations
+NULL
+
+#' @rdname interval-transformations
+#' @export
+bisect <- function(x) {
+  stopifnot(inherits(x, "units_interval"))
+  numerics <- .drop_units(x)
+  halves <- interval_bisect(numerics$lower, numerics$upper)
+  unit <- units(x$lower)
+  left <- .new_units_interval(
+    units::set_units(halves$left_lower, unit, mode = "standard"),
+    units::set_units(halves$left_upper, unit, mode = "standard")
+  )
+  right <- .new_units_interval(
+    units::set_units(halves$right_lower, unit, mode = "standard"),
+    units::set_units(halves$right_upper, unit, mode = "standard")
+  )
+  list(left = left, right = right)
+}
+
+#' @rdname interval-transformations
+#' @export
+inflate <- function(x, absolute = 0, relative = 0) {
+  stopifnot(inherits(x, "units_interval"))
+
+  len <- length(x)
+  unit <- units(x$lower)
+
+  absolute_units <- if (inherits(absolute, "units")) {
+    units::set_units(absolute, unit, mode = "standard")
+  } else {
+    units::set_units(absolute, unit, mode = "standard")
+  }
+  absolute_numeric <- units::drop_units(rep(absolute_units, length.out = len))
+  if (any(absolute_numeric < 0, na.rm = TRUE)) {
+    stop("absolute inflation must be non-negative", call. = FALSE)
+  }
+
+  if (inherits(relative, "units")) {
+    stop("relative inflation must be dimensionless", call. = FALSE)
+  }
+  relative_numeric <- rep(relative, length.out = len)
+  if (any(relative_numeric < 0, na.rm = TRUE)) {
+    stop("relative inflation must be non-negative", call. = FALSE)
+  }
+
+  magnitudes <- units::drop_units(mag(x))
+  expansion <- absolute_numeric + relative_numeric * magnitudes
+
+  numerics <- .drop_units(x)
+  widened <- interval_widen(numerics$lower, numerics$upper, expansion)
+  .new_units_interval(
+    units::set_units(widened$lower, unit, mode = "standard"),
+    units::set_units(widened$upper, unit, mode = "standard")
+  )
 }
 
 # Diagnostics --------------------------------------------------------------

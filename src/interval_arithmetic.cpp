@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 #include <boost/numeric/interval.hpp>
 #include <boost/numeric/interval/transc.hpp>
 #include <boost/numeric/interval/utility.hpp>
@@ -386,6 +387,23 @@ Rcpp::NumericVector interval_midpoint(Rcpp::NumericVector lower,
     mid[i] = midpoint_or_na(intv);
   }
   return mid;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_median(Rcpp::NumericVector lower,
+                                    Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (Rcpp::NumericVector::is_na(lower[i]) || Rcpp::NumericVector::is_na(upper[i])) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    Interval intv = make_interval(lower[i], upper[i]);
+    out[i] = boost::numeric::median(intv);
+  }
+  return out;
 }
 
 // [[Rcpp::export]]
@@ -814,6 +832,91 @@ Rcpp::NumericVector interval_distance(Rcpp::NumericVector lower1, Rcpp::NumericV
   }
 
   return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_bisect(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector left_lower(n), left_upper(n), right_lower(n), right_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double lo = lower[i];
+    const double hi = upper[i];
+
+    if (Rcpp::NumericVector::is_na(lo) || Rcpp::NumericVector::is_na(hi)) {
+      left_lower[i] = NA_REAL;
+      left_upper[i] = NA_REAL;
+      right_lower[i] = NA_REAL;
+      right_upper[i] = NA_REAL;
+      continue;
+    }
+
+    Interval intv = make_interval(lo, hi);
+    std::pair<Interval, Interval> halves = boost::numeric::bisect(intv);
+    left_lower[i] = halves.first.lower();
+    left_upper[i] = halves.first.upper();
+    right_lower[i] = halves.second.lower();
+    right_upper[i] = halves.second.upper();
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("left_lower") = left_lower,
+    Rcpp::Named("left_upper") = left_upper,
+    Rcpp::Named("right_lower") = right_lower,
+    Rcpp::Named("right_upper") = right_upper
+  );
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_widen(Rcpp::NumericVector lower,
+                          Rcpp::NumericVector upper,
+                          Rcpp::NumericVector expansion) {
+  validate_pair_lengths(lower.size(), upper.size());
+  if (expansion.size() == 0) {
+    Rcpp::stop("Expansion vector must not be empty");
+  }
+
+  const std::size_t n = lower.size();
+  const bool recycle_expansion = expansion.size() == 1;
+  if (!recycle_expansion && static_cast<std::size_t>(expansion.size()) != n) {
+    Rcpp::stop("Expansion length (%d) must match interval length (%d) or be 1",
+               static_cast<int>(expansion.size()), static_cast<int>(n));
+  }
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double expand = recycle_expansion ? expansion[0] : expansion[i];
+    if (Rcpp::NumericVector::is_na(expand)) {
+      out_lower[i] = NA_REAL;
+      out_upper[i] = NA_REAL;
+      continue;
+    }
+    if (expand < 0.0) {
+      Rcpp::stop("Expansion amount must be non-negative");
+    }
+    if (!std::isfinite(expand)) {
+      Rcpp::stop("Expansion amount must be finite");
+    }
+
+    const double lo = lower[i];
+    const double hi = upper[i];
+    if (Rcpp::NumericVector::is_na(lo) || Rcpp::NumericVector::is_na(hi)) {
+      out_lower[i] = NA_REAL;
+      out_upper[i] = NA_REAL;
+      continue;
+    }
+
+    Interval intv = make_interval(lo, hi);
+    Interval widened = boost::numeric::widen(intv, expand);
+    out_lower[i] = widened.lower();
+    out_upper[i] = widened.upper();
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("lower") = out_lower,
+    Rcpp::Named("upper") = out_upper
+  );
 }
 
 // [[Rcpp::export]]

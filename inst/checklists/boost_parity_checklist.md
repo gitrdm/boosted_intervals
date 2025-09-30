@@ -33,10 +33,10 @@ Use this checklist to track parity between the Boost Interval library and the `b
 - [x] Width / diameter (`width`)
 - [x] Midpoint (`midpoint`)
 - [x] Radius / semi-width (`rad`)
-- [ ] Median (`median` / `median_point`)
+- [x] Median (`median` / `median_point`) — added via Boost median helper
 - [x] Norm / magnitude / mig helpers (`norm`, `mag`, `mig`)
 - [x] Distance metrics (`distance`)
-- [ ] Bisect / inflate utilities (`bisect`, `inflate`)
+- [x] Bisect / inflate utilities (`bisect`, `inflate`) — implemented with Boost bisect and widening helpers
 
 ## Transcendental & Special Functions
 

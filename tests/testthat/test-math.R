@@ -289,3 +289,70 @@ test_that("radius, mag, mig, and distance match analytic expectations", {
   overlap <- units_interval(0.5, 1.5, unit = "m")
   expect_equal(distance(a, overlap), units::set_units(0, "m"))
 })
+
+test_that("median returns unit-aware representative points", {
+  intervals <- units_interval(
+    set_units(c(-4, 10), "m"),
+    set_units(c(2, 12), "m")
+  )
+  med <- stats::median(intervals)
+  expect_s3_class(med, "units")
+  expect_equal(units::deparse_unit(med), "m")
+  expect_equal(units::drop_units(med), c(-1, 11))
+
+  empty <- empty_interval(like = intervals)
+  expect_true(all(is.na(stats::median(empty))))
+  expect_error(stats::median(intervals, na.rm = TRUE), "na.rm is not supported")
+})
+
+test_that("bisect splits intervals at the Boost median", {
+  input <- units_interval(
+    set_units(c(0, -2), "m"),
+    set_units(c(4, 2), "m")
+  )
+  halves <- bisect(input)
+  expect_named(halves, c("left", "right"))
+  expect_true(all(halves$left$lower <= halves$left$upper))
+  expect_true(all(halves$right$lower <= halves$right$upper))
+
+  expect_equal(units::drop_units(lower_bounds(halves$left)), c(0, -2))
+  expect_equal(units::drop_units(upper_bounds(halves$left)), c(2, 0))
+  expect_equal(units::drop_units(lower_bounds(halves$right)), c(2, 0))
+  expect_equal(units::drop_units(upper_bounds(halves$right)), c(4, 2))
+
+  empty <- empty_interval(unit = "m")
+  halves_empty <- bisect(empty)
+  expect_true(all(is.na(lower_bounds(halves_empty$left))))
+  expect_true(all(is.na(upper_bounds(halves_empty$right))))
+})
+
+test_that("inflate combines absolute and relative widening", {
+  base <- units_interval(
+    set_units(c(-1, 2), "m"),
+    set_units(c(1, 3), "m")
+  )
+
+  inflated_abs <- inflate(base, absolute = set_units(0.5, "m"))
+  expect_equal(units::drop_units(lower_bounds(inflated_abs)), c(-1.5, 1.5))
+  expect_equal(units::drop_units(upper_bounds(inflated_abs)), c(1.5, 3.5))
+
+  inflated_rel <- inflate(base, relative = 0.1)
+  expected_lower <- c(-1, 2) - c(1, 3) * 0.1
+  expected_upper <- c(1, 3) + c(1, 3) * 0.1
+  expect_equal(units::drop_units(lower_bounds(inflated_rel)), expected_lower)
+  expect_equal(units::drop_units(upper_bounds(inflated_rel)), expected_upper)
+
+  inflated_both <- inflate(base, absolute = set_units(0.5, "m"), relative = 0.1)
+  expect_equal(
+    units::drop_units(lower_bounds(inflated_both)),
+    c(-1.6, 1.2)
+  )
+  expect_equal(
+    units::drop_units(upper_bounds(inflated_both)),
+    c(1.6, 3.8)
+  )
+
+  expect_error(inflate(base, absolute = set_units(-0.1, "m")), "non-negative")
+  expect_error(inflate(base, relative = -0.1), "non-negative")
+  expect_error(inflate(base, relative = set_units(1, "m")), "dimensionless")
+})

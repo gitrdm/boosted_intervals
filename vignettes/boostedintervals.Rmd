@@ -160,14 +160,18 @@ is_superset(whole_like_sum, sum_interval)
 
 ## Visualization-ready summaries
 
-Utilities such as `width()`, `midpoint()`, `radius()`, `norm()`, `mag()`,
-`mig()`, and `distance()` return `units` vectors that can be fed directly into
+Utilities such as `width()`, `midpoint()`, `median()`, `radius()`, `norm()`,
+`mag()`, `mig()`, and `distance()` return `units` vectors that can be fed directly into
 plotting pipelines or summary tables, while diagnostics like `zero_in()` and
-`is_whole()` surface common Boost predicates.
+`is_whole()` surface common Boost predicates. When you need interval
+transformations, `bisect()` splits each interval at its Boost median, and
+`inflate()` expands bounds by absolute or relative margins without losing unit
+metadata.
 
 ```{r}
 width(sum_interval)
 midpoint(other_width)
+median(other_width)
 
 radius(sum_interval)
 norm(direction)
@@ -175,6 +179,9 @@ mag(direction)
 mig(direction)
 distance(width_a, width_b)
 zero_in(direction)
+
+bisect(other_width)
+inflate(sum_interval, absolute = set_units(0.1, "m"))
 ```
 
 ## Next steps

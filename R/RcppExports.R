@@ -61,6 +61,10 @@ interval_midpoint <- function(lower, upper) {
     .Call(`_boostedintervals_interval_midpoint`, lower, upper)
 }
 
+interval_median <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_median`, lower, upper)
+}
+
 interval_equals <- function(lower1, upper1, lower2, upper2) {
     .Call(`_boostedintervals_interval_equals`, lower1, upper1, lower2, upper2)
 }
@@ -147,6 +151,14 @@ interval_mig <- function(lower, upper) {
 
 interval_distance <- function(lower1, upper1, lower2, upper2) {
     .Call(`_boostedintervals_interval_distance`, lower1, upper1, lower2, upper2)
+}
+
+interval_bisect <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_bisect`, lower, upper)
+}
+
+interval_widen <- function(lower, upper, expansion) {
+    .Call(`_boostedintervals_interval_widen`, lower, upper, expansion)
 }
 
 interval_tan <- function(lower, upper) {
