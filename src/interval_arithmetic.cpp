@@ -1,9 +1,18 @@
 #include <Rcpp.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <boost/numeric/interval.hpp>
+#include <boost/numeric/interval/transc.hpp>
+#include <boost/numeric/interval/utility.hpp>
 
-using Interval = boost::numeric::interval<double>;
+using IntervalRounding = boost::numeric::interval_lib::save_state<
+  boost::numeric::interval_lib::rounded_transc_std<double>>;
+using Interval = boost::numeric::interval<
+  double,
+  boost::numeric::interval_lib::policies<
+    IntervalRounding,
+    boost::numeric::interval_lib::checking_strict<double>>>;
 
 namespace {
 
@@ -56,6 +65,41 @@ inline double get_numeric_with_recycle(const Rcpp::NumericVector& values,
     return values[0];
   }
   return values[idx];
+}
+
+inline int get_integer_with_recycle(const Rcpp::IntegerVector& values,
+                                    std::size_t idx) {
+  if (values.size() == 1) {
+    return values[0];
+  }
+  return values[idx];
+}
+
+inline Interval pow_integer(const Interval& base, int exponent) {
+  if (exponent == 0) {
+    return Interval(1.0, 1.0);
+  }
+
+  const bool negative_power = exponent < 0;
+  std::uint32_t power = negative_power ? static_cast<std::uint32_t>(-static_cast<long long>(exponent))
+                                       : static_cast<std::uint32_t>(exponent);
+
+  Interval result(1.0, 1.0);
+  Interval factor = base;
+  while (power > 0) {
+    if (power & 1U) {
+      result *= factor;
+    }
+    power >>= 1U;
+    if (power > 0) {
+      factor *= factor;
+    }
+  }
+
+  if (negative_power) {
+    return Interval(1.0, 1.0) / result;
+  }
+  return result;
 }
 
 } // namespace
@@ -151,6 +195,97 @@ Rcpp::List interval_divide(Rcpp::NumericVector lower1, Rcpp::NumericVector upper
                             Rcpp::Named("upper") = res_upper);
 }
 
+
+// [[Rcpp::export]]
+Rcpp::List interval_exp(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::exp(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_log(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() <= 0.0) {
+      Rcpp::stop("log is undefined for intervals at or below zero");
+    }
+    Interval res = boost::numeric::log(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_log10(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() <= 0.0) {
+      Rcpp::stop("log10 is undefined for intervals at or below zero");
+    }
+    Interval res = boost::numeric::log(intv) / std::log(10.0);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_sin(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::sin(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_cos(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+  Interval intv = make_interval(lower[i], upper[i]);
+  Interval res = boost::numeric::cos(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
 // [[Rcpp::export]]
 Rcpp::List interval_negate(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
@@ -350,6 +485,65 @@ Rcpp::List interval_union(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1
                                   get_numeric_with_recycle(upper2, i));
     out_lower[i] = std::min(int1.lower(), int2.lower());
     out_upper[i] = std::max(int1.upper(), int2.upper());
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_abs(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::abs(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_sqrt(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() < 0.0) {
+      Rcpp::stop("Cannot take square root of an interval with negative lower bound");
+    }
+    Interval res = boost::numeric::sqrt(intv);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_pow(Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                        Rcpp::IntegerVector exponent) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = resolve_length(lower.size(), exponent.size());
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(get_numeric_with_recycle(lower, i),
+                                  get_numeric_with_recycle(upper, i));
+    const int power = get_integer_with_recycle(exponent, i);
+    if (power == 0 && interval_contains_zero(intv)) {
+      Rcpp::stop("0^0 is undefined for interval exponentiation");
+    }
+    if (power < 0 && interval_contains_zero(intv)) {
+      Rcpp::stop("Negative exponents are not defined for intervals spanning zero");
+    }
+    Interval res = pow_integer(intv, power);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
   }
 
   return Rcpp::List::create(Rcpp::Named("lower") = out_lower,

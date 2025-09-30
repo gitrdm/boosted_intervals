@@ -69,3 +69,35 @@ interval_union <- function(lower1, upper1, lower2, upper2) {
     .Call(`_boostedintervals_interval_union`, lower1, upper1, lower2, upper2)
 }
 
+interval_abs <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_abs`, lower, upper)
+}
+
+interval_sqrt <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_sqrt`, lower, upper)
+}
+
+interval_pow <- function(lower, upper, exponent) {
+    .Call(`_boostedintervals_interval_pow`, lower, upper, exponent)
+}
+
+interval_exp <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_exp`, lower, upper)
+}
+
+interval_log <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log`, lower, upper)
+}
+
+interval_log10 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_log10`, lower, upper)
+}
+
+interval_sin <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_sin`, lower, upper)
+}
+
+interval_cos <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_cos`, lower, upper)
+}
+

@@ -185,6 +185,7 @@ length.units_interval <- function(x) {
 #'
 #' @param x A `units_interval` object.
 #' @param i,j,drop Subsetting arguments.
+#' @param ... Ignored.
 #' @export
 `[.units_interval` <- function(x, i, j, ..., drop = FALSE) {
   if (!missing(j)) {

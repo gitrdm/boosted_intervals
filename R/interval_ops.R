@@ -1,17 +1,12 @@
-#' Arithmetic and comparison for unit-aware intervals
+#' Arithmetic, power, and comparison for unit-aware intervals
 #'
 #' Operations reuse Boost interval arithmetic under the hood while ensuring
 #' units remain consistent. Arithmetic results preserve or combine units as
 #' appropriate. Comparison operations return logical vectors after aligning
-#' Arithmetic and comparison for unit-aware intervals
-#'
-#' Operations reuse Boost interval arithmetic under the hood while ensuring
-#' units remain consistent. Arithmetic results preserve or combine units as
-#' appropriate. Comparison operations return logical vectors after aligning
-#' operands to shared units.
+#' operands to shared units. Integer powers are supported via the `^`
+#' operator, provided the base does not span zero for negative exponents.
 #'
 #' @param e1,e2 Operands supplied by the group generic.
-#' @param ... Ignored.
 #' @return For arithmetic operators, a `units_interval`. For comparison
 #'   operators, a logical vector.
 #' @importFrom units set_units as_units deparse_unit drop_units
@@ -51,6 +46,16 @@ Ops.units_interval <- function(e1, e2) {
     return(.interval_arith(op, e1, e2))
   }
 
+  if (op == "^") {
+    if (!inherits(e1, "units_interval")) {
+      stop("The left-hand side of '^' must be a units_interval", call. = FALSE)
+    }
+    if (inherits(e2, "units_interval")) {
+      stop("Exponentiation by an interval is not supported", call. = FALSE)
+    }
+    return(.interval_pow(e1, e2))
+  }
+
   # Binary comparison --------------------------------------------------------
   if (op %in% c("==", "!=", "<", "<=", ">", ">=")) {
     return(.interval_compare(op, e1, e2))
@@ -86,6 +91,38 @@ Ops.units_interval <- function(e1, e2) {
   .new_units_interval(
     units::set_units(res$lower, result_unit, mode = "standard"),
     units::set_units(res$upper, result_unit, mode = "standard")
+  )
+}
+
+.interval_pow <- function(base, exponent) {
+  unitless <- units::as_units(1)
+  if (inherits(exponent, "units")) {
+    exponent <- units::drop_units(units::set_units(exponent, unitless, mode = "standard"))
+  }
+  if (!is.numeric(exponent)) {
+    stop("Exponent must be numeric or a dimensionless units vector", call. = FALSE)
+  }
+  if (length(exponent) != 1L) {
+    if (!all(exponent == exponent[1])) {
+      stop("Exponent recycling would lead to inconsistent units", call. = FALSE)
+    }
+    exponent <- exponent[1]
+  }
+  exponent_round <- round(exponent)
+  if (!isTRUE(all.equal(exponent, exponent_round))) {
+    stop("Only integer exponents are supported for interval '^'", call. = FALSE)
+  }
+  exponent_int <- as.integer(exponent_round)
+
+  numerics <- .drop_units(base)
+  res <- interval_pow(numerics$lower, numerics$upper, exponent_int)
+
+  base_unit_sample <- units::set_units(1, units(base$lower), mode = "standard")
+  result_unit_symbol <- units::deparse_unit(base_unit_sample^exponent_int)
+
+  .new_units_interval(
+    units::set_units(res$lower, result_unit_symbol, mode = "standard"),
+    units::set_units(res$upper, result_unit_symbol, mode = "standard")
   )
 }
 
@@ -294,4 +331,62 @@ interval_union <- function(x, y) {
   lower <- units::set_units(res$lower, base_unit, mode = "standard")
   upper <- units::set_units(res$upper, base_unit, mode = "standard")
   .new_units_interval(lower, upper)
+}
+
+#' Mathematical transformations for unit-aware intervals
+#'
+#' The `Math` group generic supports a subset of unary mathematical
+#' transformations. `abs()` preserves units while `sqrt()` expects squared
+#' quantities and returns the principal square root with adjusted units.
+#' Dimensionless intervals additionally support `exp()`, `log()`, `log10()`,
+#' `sin()`, and `cos()`, all of which return dimensionless intervals.
+#'
+#' @param x A `units_interval` vector.
+#' @param ... Unused.
+#' @return A `units_interval` after applying the requested transformation.
+#' @export
+Math.units_interval <- function(x, ...) {
+  fun <- .Generic
+  numerics <- .drop_units(x)
+  base_unit_symbol <- units::deparse_unit(x$lower)[1]
+  base_unit <- units::as_units(base_unit_symbol)
+  unitless <- units::as_units(1)
+
+  if (fun == "abs") {
+    res <- interval_abs(numerics$lower, numerics$upper)
+    return(.new_units_interval(
+      units::set_units(res$lower, base_unit, mode = "standard"),
+      units::set_units(res$upper, base_unit, mode = "standard")
+    ))
+  }
+
+  if (fun == "sqrt") {
+    unit_sample <- units::set_units(1, base_unit, mode = "standard")
+    target_unit_symbol <- units::deparse_unit(sqrt(unit_sample))
+    res <- interval_sqrt(numerics$lower, numerics$upper)
+    return(.new_units_interval(
+      units::set_units(res$lower, target_unit_symbol, mode = "standard"),
+      units::set_units(res$upper, target_unit_symbol, mode = "standard")
+    ))
+  }
+
+  if (fun %in% c("exp", "log", "log10", "sin", "cos")) {
+    if (base_unit_symbol != "1") {
+      stop(sprintf("Function '%s' requires dimensionless intervals", fun), call. = FALSE)
+    }
+    res <- switch(
+      fun,
+      "exp" = interval_exp(numerics$lower, numerics$upper),
+      "log" = interval_log(numerics$lower, numerics$upper),
+      "log10" = interval_log10(numerics$lower, numerics$upper),
+      "sin" = interval_sin(numerics$lower, numerics$upper),
+      "cos" = interval_cos(numerics$lower, numerics$upper)
+    )
+    return(.new_units_interval(
+      units::set_units(res$lower, unitless, mode = "standard"),
+      units::set_units(res$upper, unitless, mode = "standard")
+    ))
+  }
+
+  stop(sprintf("Function '%s' is not implemented for units_interval", fun), call. = FALSE)
 }
