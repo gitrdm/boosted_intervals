@@ -1,0 +1,49 @@
+---
+title: "Concentration and Dose Uncertainty in Pharmacokinetics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Concentration and Dose Uncertainty in Pharmacokinetics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(boostedintervals)
+library(units)
+```
+
+## Motivation
+
+Drug dosage, patient weight, and volume of distribution can be uncertain. Use
+intervals to estimate concentration ranges and verify dosing safety margins.
+
+## Concentration example
+
+Concentration is dose divided by volume: C = dose / V.
+
+```{r}
+dose <- units_interval(set_units(100, "mg"), set_units(102, "mg"))
+V    <- units_interval(set_units(5, "L"), set_units(5.2, "L"))
+
+C <- dose / V
+as_numeric_bounds(C, unit = "mg/L")
+```
+
+## Safety check
+
+Compare concentration to a toxicity threshold.
+
+```{r}
+threshold <- units_interval(set_units(18, "mg/L"), set_units(20, "mg/L"))
+possible(C, threshold, ">=")
+certain(C, threshold, ">=")
+```
+
+## Takeaways
+
+- Intervals support conservative safety checks.
+- Convert to numeric bounds for downstream reporting and plotting.
+
+---
+

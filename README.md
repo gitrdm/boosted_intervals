@@ -50,6 +50,12 @@ Linux) along with system Boost headers. The package links against Boost via the
 - **Deterministic double precision:** Computations rely on IEEE-754 double
   precision and Boost's directed rounding controls. Alternative numeric types
   aren't supported.
+- **Real (double) endpoints assumed:** While Boost.Interval supports both
+  integer and real interval types, this R wrapper assumes real (double)
+  endpoints everywhere because unit handling and conversions are defined for
+  reals in `units`. Integer-specific semantics (e.g., modular wrapping,
+  integer overflow behaviour, or discrete-only operations) are not modelled
+  by the R helpers.
 - **Finite, real-valued bounds:** Complex numbers, symbolic representations, or
   infinite precision arithmetic aren't part of this design.
 
@@ -101,6 +107,9 @@ as_numeric_bounds(area, unit = "cm^2")
 - **Light Boost wrapper:** Almost every exported R helper maps directly to a
   Boost-Interval-backed routine via Rcpp. That keeps the implementation thin but
   also means Boost limitations and bugs surface directly in R.
+  Note: the wrapper is focused on real/double interval semantics. If you need
+  integer-typed interval behaviour you should use Boost directly or extend the
+  C++ layer — the R layer does not attempt to emulate integer-specific rules.
 - **Minimal state:** Aside from optional rounding/checking modes, the package is
   largely stateless. Inputs in, outputs out.
 - **Regressions only:** Tests focus on correctness/regression scenarios, not on

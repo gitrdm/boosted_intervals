@@ -1,0 +1,58 @@
+---
+title: "Propagating Uncertainty in Physics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Propagating Uncertainty in Physics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(boostedintervals)
+library(units)
+```
+
+## Motivation
+
+Small measurement uncertainties in mass and velocity propagate nonlinearly
+into derived physical quantities such as kinetic energy. Intervals allow us to
+represent and propagate these uncertainties while keeping unit metadata.
+
+## Kinetic energy example
+
+The kinetic energy of a mass `m` moving at speed `v` is:
+
+\[ E = \tfrac{1}{2} m v^2 \]
+
+We build unit-aware intervals for `m` and `v`, then compute `E` and extract
+numeric bounds.
+
+```{r}
+mass <- units_interval(set_units(1.0, "kg"), set_units(1.02, "kg"))
+vel  <- units_interval(set_units(10.0, "m/s"), set_units(10.2, "m/s"))
+energy <- 0.5 * mass * vel^2
+energy
+as_numeric_bounds(energy, unit = "J")
+```
+
+## Diagnostics and safety check
+
+We can ask whether energy may exceed a safety threshold or whether it is
+certainly below it.
+
+```{r}
+threshold <- units_interval(set_units(50, "J"), set_units(55, "J"))
+possible(energy, threshold, ">=")
+certain(energy, threshold, ">=")
+verify(energy, threshold, ">=")
+```
+
+## Takeaways
+
+- Intervals propagate non-linear uncertainty naturally.
+- Units remain attached, and conversion to numeric bounds is straightforward
+  for downstream reporting.
+
+---
+

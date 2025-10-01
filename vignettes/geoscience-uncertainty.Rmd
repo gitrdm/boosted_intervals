@@ -1,0 +1,51 @@
+---
+title: "Spatial and Measurement Uncertainty in Geoscience"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Spatial and Measurement Uncertainty in Geoscience}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(boostedintervals)
+library(units)
+```
+
+## Motivation
+
+Sensors and surveys produce measurements with uncertainty. Representing
+elevation, depth, and distance as intervals makes downstream spatial analysis
+aware of measurement error.
+
+## Elevation example
+
+Two GPS-derived elevation measurements with uncertainty.
+
+```{r}
+site_a <- units_interval(set_units(120.0, "m"), set_units(120.5, "m"))
+site_b <- units_interval(set_units(150.2, "m"), set_units(150.8, "m"))
+
+# Distance in vertical (simple example)
+dist <- abs(site_b - site_a)
+midpoint(dist)
+as_numeric_bounds(dist, unit = "m")
+```
+
+## Inflating measurement uncertainty for conservative planning
+
+We may wish to inflate uncertainties to account for unknown biases.
+
+```{r}
+inflated <- inflate(site_a, relative = 0.1)
+inflated
+```
+
+## Takeaways
+
+- Keep units attached to prevent accidental mixing of incompatible measures.
+- Interval diagnostics support conservative planning and risk-aware mapping.
+
+---
+

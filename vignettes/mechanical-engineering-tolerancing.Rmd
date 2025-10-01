@@ -1,0 +1,57 @@
+---
+title: "Tolerancing and Fit in Mechanical Design"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tolerancing and Fit in Mechanical Design}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(boostedintervals)
+library(units)
+```
+
+## Motivation
+
+Designing parts that fit together requires reasoning about tolerances. Intervals
+let us compute clearance ranges and check whether a given fit is guaranteed or
+only possible.
+
+## Shaft and hole example
+
+Compute the clearance interval (hole - shaft) and test whether clearance is
+certainly positive.
+
+```{r}
+shaft <- units_interval(set_units(9.98, "mm"), set_units(9.995, "mm"))
+hole  <- units_interval(set_units(10.0, "mm"), set_units(10.02, "mm"))
+
+clearance <- hole - shaft
+clearance
+
+# Is positive clearance guaranteed?
+certain(clearance, units::set_units(0, "mm"), ">")
+# Is positive clearance possible?
+possible(clearance, units::set_units(0, "mm"), ">")
+```
+
+## Modelling tighter tolerances
+
+We can model process improvements by contracting the manufacturing
+uncertainty (symmetrically) and re-evaluating the fit.
+
+```{r}
+improved_shaft <- contract(shaft, absolute = units::set_units(0.005, "mm"))
+improved_clearance <- hole - improved_shaft
+certain(improved_clearance, units::set_units(0, "mm"), ">")
+```
+
+## Takeaways
+
+- Intervals make fit analysis explicit and auditable.
+- Diagnostics (`possible`/`certain`) help decide whether rework is required.
+
+---
+
