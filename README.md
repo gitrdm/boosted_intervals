@@ -118,7 +118,7 @@ possible(measured, spec, "==")  # Could be in spec?
 certain(measured, spec, "==")   # Guaranteed in spec?
 ```
 
-**Geometric Calculations**:
+**Example Calculations**:
 ```r
 # Rectangle with uncertain dimensions
 w <- units_interval(2, 3, unit = "m")
@@ -136,6 +136,7 @@ certain(area, min_area, ">=")
 - `units_interval()` - Create unit-aware intervals from bounds
 - `as_units_interval()` - Convert objects to units_interval
 - `as_numeric_bounds()` - Extract numeric bounds without units
+- `convert_units()` - Change units of interval bounds
 - `convert_units()` - Change units of interval bounds
 
 ### Arithmetic Operations
