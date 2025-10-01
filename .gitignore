@@ -36,3 +36,5 @@ man/*.Rd
 # Vignettes
 vignettes/*.html
 vignettes/*.pdf
+/doc/
+/Meta/
