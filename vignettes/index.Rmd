@@ -1,0 +1,18 @@
+---
+title: "Vignette index: Discipline examples"
+vignette: >
+  %\VignetteIndexEntry{Discipline vignettes}
+  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEncoding{UTF-8}
+output: rmarkdown::html_vignette
+---
+
+This package includes a set of short discipline-focused vignettes that show typical use-cases for interval arithmetic with units. The files below are rendered into HTML (and are available under `inst/doc/` after rendering):
+
+- [Physics — uncertainties](physics-uncertainties.html)
+- [Mechanical engineering — tolerancing](mechanical-engineering-tolerancing.html)
+- [Geoscience — uncertainty propagation](geoscience-uncertainty.html)
+- [Finance — interval cashflows and user-defined currency units](finance-intervals.html)
+- [Pharmacokinetics — dosage intervals and clearance](pharmacokinetics.html)
+
+Each vignette is short and self-contained. If you'd like, I can add lightweight plots or small example datasets to any of them.
