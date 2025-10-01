@@ -144,6 +144,28 @@
 #'   Required whenever either bound is numeric. When both bounds supply units
 #'   the `unit` argument is ignored but can still be used to force conversion.
 #' @return A `units_interval` vector.
+#' @section Usage Patterns:
+#' 
+#' **From numeric bounds:**
+#' ```
+#' units_interval(0, 10, unit = "meters")
+#' units_interval(c(0, 5), c(10, 15), unit = "seconds")
+#' ```
+#' 
+#' **From units objects:**
+#' ```
+#' units_interval(set_units(0, "m"), set_units(10, "m"))
+#' units_interval(set_units(c(0, 5), "s"), set_units(c(10, 15), "s"))
+#' ```
+#' 
+#' **Unit conversion:**
+#' ```
+#' units_interval(set_units(0, "m"), set_units(1000, "mm"), unit = "m")
+#' ```
+#' @section Error Handling:
+#' - Bounds must have compatible units
+#' - Lower bound cannot exceed upper bound
+#' - Numeric inputs require explicit units
 #' @importFrom units set_units drop_units as_units deparse_unit
 #' @examples
 #' library(units)

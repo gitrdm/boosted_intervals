@@ -831,6 +831,32 @@ hull <- function(..., unit = NULL, na.rm = FALSE) {
 #'   `is_whole()` returns `TRUE` where intervals are unbounded above and below.
 #'   `possible()` / `certain()` return logical vectors, while `verify()` returns
 #'   a logical vector that may contain `NA` when the relation cannot be proven.
+#' @section Key Concepts:
+#' 
+#' **Possibility vs Certainty:**
+#' - `possible(x, y, "<")` - TRUE if there exists some value in x < some value in y
+#' - `certain(x, y, "<")` - TRUE only if ALL values in x < ALL values in y
+#' - `verify(x, y, "<")` - TRUE/certain, FALSE/impossible, NA/undecided
+#' 
+#' **Containment:**
+#' - `is_subset(x, y)` - TRUE if x is completely contained within y
+#' - `is_proper_subset(x, y)` - TRUE if x is contained within y but not equal to y
+#' @section Common Use Cases:
+#' 
+#' **Tolerance checking:**
+#' ```
+#' measured <- units_interval(9.5, 10.5, unit = "mm")
+#' tolerance <- units_interval(9.8, 10.2, unit = "mm")
+#' possible(measured, tolerance, "==")  # Could pass inspection?
+#' certain(measured, tolerance, "==")   # Guaranteed to pass?
+#' ```
+#' 
+#' **Safety verification:**
+#' ```
+#' pressure <- units_interval(95, 105, unit = "psi")
+#' safe_max <- set_units(100, "psi")
+#' certain(pressure, safe_max, "<=")  # Definitely safe?
+#' ```
 #' @name interval-diagnostics
 NULL
 

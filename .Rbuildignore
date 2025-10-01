@@ -18,3 +18,4 @@
 ^.*\\.out$
 ^doc$
 ^Meta$
+^API_DESIGN\.md$
