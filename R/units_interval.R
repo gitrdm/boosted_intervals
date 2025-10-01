@@ -203,33 +203,16 @@ as_units_interval <- function(x, unit = NULL) {
   stop("Cannot coerce object of class '", paste(class(x), collapse = ","), "' to a units_interval.", call. = FALSE)
 }
 
-#' Construct empty or whole unit-aware intervals
+#' Create a whole (unbounded) interval
 #'
-#' These helpers produce canonical empty or whole intervals while preserving
-#' unit metadata. They are convenient when seeding algorithms that refine
-#' intervals iteratively or when representing missing measurements explicitly.
+#' Constructs a `units_interval` vector where all elements span the entire real line (i.e., `[-Inf, Inf]`).
+#' This is useful for representing maximal uncertainty or as a starting point for algorithms that iteratively contract intervals.
 #'
-#' @param unit Unit to attach to the interval. Accepts a character string or a
-#'   `units` object. Ignored when `like` is supplied.
-#' @param length Desired length of the resulting interval vector. Defaults to
-#'   1 when `like` is not provided.
-#' @param like Optional `units_interval` whose units (and length) should be
-#'   reused. When supplied, `unit` and `length` are ignored.
-#' @return A `units_interval` vector containing either empty (all `NA`) or whole
-#'   (infinite) intervals.
-#' @name special-interval-constructors
-NULL
-
-#' @rdname special-interval-constructors
-#' @export
-empty_interval <- function(unit = NULL, length = NULL, like = NULL) {
-  spec <- .resolve_interval_spec(unit = unit, length = length, like = like)
-  lower <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
-  upper <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
-  .new_units_interval(lower, upper)
-}
-
-#' @rdname special-interval-constructors
+#' @param unit Unit to attach to the interval. Accepts a character string or a `units` object. Ignored when `like` is supplied.
+#' @param length Desired length of the resulting interval vector. Defaults to 1 when `like` is not provided.
+#' @param like Optional `units_interval` whose units (and length) should be reused. When supplied, `unit` and `length` are ignored.
+#' @return A `units_interval` vector containing only whole intervals (all bounds infinite).
+#' @seealso [empty_interval()]
 #' @export
 whole_interval <- function(unit = NULL, length = NULL, like = NULL) {
   spec <- .resolve_interval_spec(unit = unit, length = length, like = like)
@@ -291,10 +274,13 @@ c.units_interval <- function(...) {
   .new_units_interval(lower, upper)
 }
 
-#' Repeat interval vectors
+#' Repeat units_interval vectors
+#'
+#' Repeats the elements of a `units_interval` vector, similar to [base::rep()].
 #'
 #' @param x A `units_interval` object.
 #' @param ... Arguments passed to [base::rep()].
+#' @return A repeated `units_interval` vector.
 #' @export
 rep.units_interval <- function(x, ...) {
   .new_units_interval(rep(x$lower, ...), rep(x$upper, ...))
@@ -401,4 +387,22 @@ as_numeric_bounds <- function(x, unit = NULL) {
     lower = units::drop_units(lower),
     upper = units::drop_units(upper)
   )
+}
+
+#' Create an empty interval
+#'
+#' Constructs a `units_interval` vector where all elements are empty (i.e., both bounds are `NA`).
+#' This is useful for representing missing or undefined measurements, or as a seed for algorithms that refine intervals iteratively.
+#'
+#' @param unit Unit to attach to the interval. Accepts a character string or a `units` object. Ignored when `like` is supplied.
+#' @param length Desired length of the resulting interval vector. Defaults to 1 when `like` is not provided.
+#' @param like Optional `units_interval` whose units (and length) should be reused. When supplied, `unit` and `length` are ignored.
+#' @return A `units_interval` vector containing only empty intervals (all `NA`).
+#' @seealso [whole_interval()]
+#' @export
+empty_interval <- function(unit = NULL, length = NULL, like = NULL) {
+  spec <- .resolve_interval_spec(unit = unit, length = length, like = like)
+  lower <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
+  upper <- units::set_units(rep(NA_real_, spec$length), spec$unit, mode = "standard")
+  .new_units_interval(lower, upper)
 }

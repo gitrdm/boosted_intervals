@@ -993,13 +993,21 @@ verify <- function(x, y, relation = c("<", "<=", ">", ">=", "==", "!=")) {
 
 # Containment ---------------------------------------------------------------
 
-#' Interval containment
+##' Test if an interval contains a value or another interval
 #'
-#' Determine whether intervals contain given points or other intervals.
+#' Determines whether each element of a `units_interval` contains a given value (numeric, `units`, or another `units_interval`).
+#' For interval arguments, returns `TRUE` if the entire argument is contained within the interval.
+#' This is a vectorized operation: arguments are recycled to a common length, and units are aligned automatically.
 #'
 #' @param x A `units_interval` object.
 #' @param value Points (numeric or `units`) or another `units_interval`.
 #' @return Logical vector indicating containment for each element.
+#' @examples
+#' library(units)
+#' interval <- units_interval(set_units(1, "m"), set_units(5, "m"))
+#' contains(interval, set_units(3, "m")) # TRUE
+#' contains(interval, units_interval(set_units(2, "m"), set_units(4, "m"))) # TRUE
+#' contains(interval, set_units(6, "m")) # FALSE
 #' @export
 contains <- function(x, value) {
   UseMethod("contains")
@@ -1035,12 +1043,20 @@ contains.units_interval <- function(x, value) {
   interval_contains_point(numerics$lower, numerics$upper, pts)
 }
 
-# Overlap -------------------------------------------------------------------
+#' Overlap -------------------------------------------------------------------
 
-#' Determine interval overlap
+#' Test for overlap between intervals
 #'
-#' @param x,y Interval operands.
-#' @return Logical vector indicating whether intervals overlap.
+#' Determines whether two intervals (numeric, `units`, or `units_interval`) overlap, meaning their hulls intersect. This is a vectorized operation: for each element, returns `TRUE` if the intervals share any common values, and `FALSE` otherwise. Units are automatically aligned as needed.
+#'
+#' @param x,y Interval operands. Each may be a numeric vector, a `units` vector, or a `units_interval` object. Arguments are recycled to a common length.
+#' @return Logical vector indicating whether each pair of intervals overlaps.
+#' @examples
+#' library(units)
+#' a <- units_interval(set_units(1, "m"), set_units(3, "m"))
+#' b <- units_interval(set_units(2, "m"), set_units(4, "m"))
+#' overlaps(a, b) # TRUE
+#' overlaps(a, units_interval(set_units(4, "m"), set_units(5, "m"))) # FALSE
 #' @export
 overlaps <- function(x, y) {
   pair <- .coerce_pair_same_units(x, y)
@@ -1058,9 +1074,16 @@ interval_union_cpp <- interval_union
 #'
 #' Compute the elementwise overlap between two `units_interval` vectors. When
 #' intervals do not overlap the corresponding result is an `NA` interval.
+#' This preserves units and handles recycling of arguments to a common length.
 #'
 #' @param x,y `units_interval` objects.
 #' @return A `units_interval` containing the intersections.
+#' @examples
+#' library(units)
+#' a <- units_interval(set_units(1, "m"), set_units(4, "m"))
+#' b <- units_interval(set_units(2, "m"), set_units(5, "m"))
+#' interval_intersection(a, b) # [2, 4] m
+#' interval_intersection(a, units_interval(set_units(5, "m"), set_units(6, "m"))) # NA
 #' @export
 interval_intersection <- function(x, y) {
   pair <- .coerce_pair_same_units(x, y)
@@ -1075,10 +1098,18 @@ interval_intersection <- function(x, y) {
 
 #' Interval union
 #'
-#' Compute the elementwise hull that spans the input intervals.
+#' Compute the union (hull) of two intervals
+#'
+#' Computes the elementwise hull that spans the input intervals, i.e., the smallest interval containing both.
+#' This preserves units and handles recycling of arguments to a common length.
 #'
 #' @inheritParams interval_intersection
 #' @return A `units_interval` containing the hull of each elementwise pair.
+#' @examples
+#' library(units)
+#' a <- units_interval(set_units(1, "m"), set_units(3, "m"))
+#' b <- units_interval(set_units(2, "m"), set_units(4, "m"))
+#' interval_union(a, b) # [1, 4] m
 #' @export
 interval_union <- function(x, y) {
   pair <- .coerce_pair_same_units(x, y)

@@ -171,7 +171,13 @@ successor <- function(x, steps = 1L) {
   stop("Unsupported input for successor()", call. = FALSE)
 }
 
-#' @rdname rounding-helpers
+#' Compute the previous representable value(s) for interval bounds or scalars
+#'
+#' Moves each element of a numeric, `units`, or `units_interval` object backward by a specified number of representable floating-point steps. For intervals, both bounds are shifted inward.
+#'
+#' @param x A `units_interval`, `units` vector, or numeric vector.
+#' @param steps Non-negative integer step counts recycled along `x`. Each step moves one representable floating-point value.
+#' @return An object of the same class as `x` (numeric, `units`, or `units_interval`).
 #' @export
 predecessor <- function(x, steps = 1L) {
   n <- length(x)
@@ -222,7 +228,13 @@ prior_value <- function(x, steps = 1L) {
   stop("Unsupported input for prior_value()", call. = FALSE)
 }
 
-#' @rdname rounding-helpers
+#' Expand an interval outward by representable steps
+#'
+#' Shifts both bounds of a `units_interval` outward by a specified number of representable floating-point steps, increasing the enclosure.
+#'
+#' @param x A `units_interval` object.
+#' @param steps Non-negative integer step counts recycled along `x`.
+#' @return A widened `units_interval`.
 #' @export
 next_interval <- function(x, steps = 1L) {
   if (!inherits(x, "units_interval")) {
@@ -232,7 +244,13 @@ next_interval <- function(x, steps = 1L) {
   .next_interval_impl(x, steps)
 }
 
-#' @rdname rounding-helpers
+#' Contract an interval inward by representable steps
+#'
+#' Shifts both bounds of a `units_interval` inward by a specified number of representable floating-point steps, decreasing the enclosure.
+#'
+#' @param x A `units_interval` object.
+#' @param steps Non-negative integer step counts recycled along `x`.
+#' @return A contracted `units_interval`.
 #' @export
 prior_interval <- function(x, steps = 1L) {
   if (!inherits(x, "units_interval")) {
@@ -242,7 +260,13 @@ prior_interval <- function(x, steps = 1L) {
   .prior_interval_impl(x, steps)
 }
 
-#' @rdname rounding-helpers
+#' Expand an interval conservatively by representable steps
+#'
+#' Expands a `units_interval` outward by a specified number of representable floating-point steps, ensuring the result encloses the original interval.
+#'
+#' @param x A `units_interval` object.
+#' @param steps Non-negative integer step counts recycled along `x`.
+#' @return A widened `units_interval`.
 #' @export
 round_outward <- function(x, steps = 1L) {
   if (!inherits(x, "units_interval")) {
@@ -252,7 +276,13 @@ round_outward <- function(x, steps = 1L) {
   .round_outward_interval_impl(x, steps)
 }
 
-#' @rdname rounding-helpers
+#' Contract an interval conservatively by representable steps
+#'
+#' Contracts a `units_interval` inward by a specified number of representable floating-point steps, ensuring the result is contained within the original interval.
+#'
+#' @param x A `units_interval` object.
+#' @param steps Non-negative integer step counts recycled along `x`.
+#' @return A contracted `units_interval`.
 #' @export
 round_inward <- function(x, steps = 1L) {
   if (!inherits(x, "units_interval")) {
@@ -262,7 +292,12 @@ round_inward <- function(x, steps = 1L) {
   .round_inward_interval_impl(x, steps)
 }
 
-#' @rdname rounding-helpers
+#' Collapse an interval to its median value
+#'
+#' Returns the Boost median of a `units_interval`, yielding a point value that lies inside the original enclosure. Useful for extracting a representative value from an interval.
+#'
+#' @param x A `units_interval` object.
+#' @return A `units` vector representing the rounded median.
 #' @export
 median_rounding <- function(x) {
   if (!inherits(x, "units_interval")) {
