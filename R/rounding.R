@@ -3,8 +3,9 @@
 #' These helpers expose Boost's control features for navigating the floating
 #' point lattice and nudging interval bounds. `successor()` and
 #' `predecessor()` shift individual bounds by the next representable double,
-#' while `next_interval()` and `prior_interval()` move both bounds outward or
-#' inward. Building on those primitives, `round_outward()` expands an interval
+#' `next_value()` and `prior_value()` advance scalar measurements while
+#' preserving units, and `next_interval()` and `prior_interval()` move both
+#' bounds outward or inward. Building on those primitives, `round_outward()` expands an interval
 #' conservatively and `round_inward()` contracts it. `median_rounding()`
 #' collapses an interval to its Boost median, returning a point value that lies
 #' inside the original enclosure.
@@ -12,11 +13,13 @@
 #' @param x Either a `units_interval`, a `units` vector, or a numeric vector.
 #' @param steps Non-negative integer step counts recycled along `x`. Each step
 #'   advances one representable floating-point value.
-#' @return `successor()` and `predecessor()` return objects of the same class as
-#'   `x`. Interval-specific helpers (`next_interval()`, `prior_interval()`,
-#'   `round_outward()`, and `round_inward()`) always return `units_interval`
-#'   vectors. `median_rounding()` returns a `units` vector representing the
-#'   rounded median.
+#' @return `successor()`, `predecessor()`, `next_value()`, and `prior_value()`
+#'   return objects of the same class as `x` (numeric inputs yield doubles,
+#'   `units` inputs retain their units). Interval-specific helpers
+#'   (`next_interval()`, `prior_interval()`, `round_outward()`, and
+#'   `round_inward()`) always return `units_interval` vectors.
+#'   `median_rounding()` returns a `units` vector representing the rounded
+#'   median.
 #' @examples
 #' library(units)
 #' interval <- units_interval(set_units(1, "m"), set_units(2, "m"))
@@ -66,6 +69,28 @@ NULL
   base_unit <- units(x)
   numeric <- units::drop_units(units::set_units(x, base_unit, mode = "standard"))
   shifted <- .predecessor_numeric(numeric, steps)
+  units::set_units(shifted, base_unit, mode = "standard")
+}
+
+.next_value_numeric <- function(x, steps) {
+  interval_next_scalar(x, steps)
+}
+
+.prior_value_numeric <- function(x, steps) {
+  interval_prior_scalar(x, steps)
+}
+
+.next_value_units <- function(x, steps) {
+  base_unit <- units(x)
+  numeric <- units::drop_units(units::set_units(x, base_unit, mode = "standard"))
+  shifted <- .next_value_numeric(numeric, steps)
+  units::set_units(shifted, base_unit, mode = "standard")
+}
+
+.prior_value_units <- function(x, steps) {
+  base_unit <- units(x)
+  numeric <- units::drop_units(units::set_units(x, base_unit, mode = "standard"))
+  shifted <- .prior_value_numeric(numeric, steps)
   units::set_units(shifted, base_unit, mode = "standard")
 }
 
@@ -161,6 +186,40 @@ predecessor <- function(x, steps = 1L) {
     return(.predecessor_numeric(x, steps))
   }
   stop("Unsupported input for predecessor()", call. = FALSE)
+}
+
+#' @rdname rounding-helpers
+#' @export
+next_value <- function(x, steps = 1L) {
+  n <- length(x)
+  steps <- .validate_rounding_steps(steps, n)
+  if (inherits(x, "units_interval")) {
+    stop("next_value() expects numeric or units input; use next_interval() for intervals.", call. = FALSE)
+  }
+  if (inherits(x, "units")) {
+    return(.next_value_units(x, steps))
+  }
+  if (is.numeric(x)) {
+    return(.next_value_numeric(x, steps))
+  }
+  stop("Unsupported input for next_value()", call. = FALSE)
+}
+
+#' @rdname rounding-helpers
+#' @export
+prior_value <- function(x, steps = 1L) {
+  n <- length(x)
+  steps <- .validate_rounding_steps(steps, n)
+  if (inherits(x, "units_interval")) {
+    stop("prior_value() expects numeric or units input; use prior_interval() for intervals.", call. = FALSE)
+  }
+  if (inherits(x, "units")) {
+    return(.prior_value_units(x, steps))
+  }
+  if (is.numeric(x)) {
+    return(.prior_value_numeric(x, steps))
+  }
+  stop("Unsupported input for prior_value()", call. = FALSE)
 }
 
 #' @rdname rounding-helpers

@@ -9,6 +9,19 @@ test_that("successor and predecessor operate on numerics", {
   expect_true(all(double_step > up | is.na(double_step)))
 })
 
+test_that("next_value and prior_value advance numerics predictably", {
+  x <- c(0, 1, -1, NA_real_)
+  next_vals <- next_value(x)
+  expect_true(all(next_vals[!is.na(x)] > x[!is.na(x)]))
+  expect_true(all(is.na(next_vals[is.na(x)])))
+
+  back <- prior_value(next_vals)
+  expect_identical(back, x)
+
+  double_step <- next_value(x, steps = 2L)
+  expect_true(all(double_step[!is.na(x)] > next_vals[!is.na(x)]))
+})
+
 test_that("successor and predecessor respect units", {
   x <- units::set_units(c(1, 2), "m")
   next_vals <- successor(x)
@@ -18,6 +31,20 @@ test_that("successor and predecessor respect units", {
 
   prev_vals <- predecessor(next_vals)
   expect_equal(prev_vals, x)
+})
+
+test_that("next_value and prior_value preserve units", {
+  x <- units::set_units(c(1, 2), "m")
+  next_vals <- next_value(x)
+  expect_s3_class(next_vals, "units")
+  expect_identical(units(next_vals), units(x))
+  expect_true(all(next_vals > x))
+
+  back <- prior_value(next_vals)
+  expect_equal(back, x)
+
+  expect_error(next_value(units_interval(x, x)), "next_value\\(\\) expects numeric or units input")
+  expect_error(prior_value(units_interval(x, x)), "prior_value\\(\\) expects numeric or units input")
 })
 
 test_that("interval successor and predecessor adjust single bounds", {
