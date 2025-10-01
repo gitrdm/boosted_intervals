@@ -102,12 +102,20 @@ log1p(units_interval(0, 0.5, unit = "1"))
 log2(units_interval(1, 8, unit = "1"))
 tanh(growth)
 asinh(units_interval(-0.2, 0.2, unit = "1"))
+
+exp2(growth)
+pow2(units_interval(-1, 2, unit = "1"))
+sqrt1pm1(units_interval(-0.3, 0.3, unit = "1"))
+hypot(width_a, width_b)
 ```
 
 Exponentials, hyperbolic functions, and logarithms require dimensionless
 intervals. That includes the expanded family of helpers shown above:
 `expm1()`, `log1p()`, and `log2()` alongside their `exp()`, `log()`, and
-`log10()` counterparts. Trigonometric functions accept angles expressed in
+`log10()` counterparts, as well as the base-2 variants `exp2()`/`pow2()` and
+the numerically stable `sqrt1pm1()`. The Euclidean norm can be computed via
+`hypot()` when combining multiple length intervals. Trigonometric functions
+accept angles expressed in
 radians or any units convertible to radians, converting behind the scenes
 before evaluating the function. Inverse trigonometric functions consume
 dimensionless inputs but return angles in radians. If inputs carry

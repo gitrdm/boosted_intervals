@@ -1057,3 +1057,143 @@ Math.units_interval <- function(x, ...) {
 
   stop(sprintf("Function '%s' is not implemented for units_interval", fun), call. = FALSE)
 }
+
+#' Additional transcendental helpers for unit intervals
+#'
+#' These helpers expose extra Boost interval functions absent from the base R
+#' `Math` group generic. `exp2()` computes the base-2 exponential of a
+#' dimensionless interval, `pow2()` is an alias provided for Boost parity,
+#' `sqrt1pm1()` evaluates `sqrt(1 + x) - 1` with better numerical stability, and
+#' `hypot()` returns the Euclidean norm of two or more compatible intervals.
+#'
+#' @param x A `units_interval` (or object coercible via [as_units_interval()])
+#'   carrying dimensionless units.
+#' @param ... Additional interval-like arguments for `hypot()`. Each entry must
+#'   be numeric, a `units` vector, or a `units_interval` convertible to the
+#'   shared unit.
+#' @return A `units_interval` with appropriate units.
+#' @examples
+#' library(units)
+#' exp2(units_interval(0, 1, unit = "1"))
+#'
+#' sqrt1pm1(units_interval(-0.25, 0.25, unit = "1"))
+#'
+#' leg_a <- units_interval(set_units(3, "m"), set_units(4, "m"))
+#' leg_b <- units_interval(set_units(4, "m"), set_units(5, "m"))
+#' hypot(leg_a, leg_b)
+#'
+#' @name transcendental-extras
+NULL
+
+#' @rdname transcendental-extras
+#' @export
+exp2 <- function(x) {
+  dimless <- units::as_units(1)
+  interval <- as_units_interval(x, unit = dimless)
+  interval_dimless <- convert_units(interval, dimless)
+  numerics <- .drop_units(interval_dimless)
+  res <- interval_exp2(numerics$lower, numerics$upper)
+  .new_units_interval(
+    units::set_units(res$lower, dimless, mode = "standard"),
+    units::set_units(res$upper, dimless, mode = "standard")
+  )
+}
+
+#' @rdname transcendental-extras
+#' @export
+pow2 <- function(x) {
+  exp2(x)
+}
+
+#' @rdname transcendental-extras
+#' @export
+sqrt1pm1 <- function(x) {
+  dimless <- units::as_units(1)
+  interval <- as_units_interval(x, unit = dimless)
+  interval_dimless <- convert_units(interval, dimless)
+  numerics <- .drop_units(interval_dimless)
+  res <- interval_sqrt1pm1(numerics$lower, numerics$upper)
+  .new_units_interval(
+    units::set_units(res$lower, dimless, mode = "standard"),
+    units::set_units(res$upper, dimless, mode = "standard")
+  )
+}
+
+.coerce_hypot_argument <- function(x, unit) {
+  if (!inherits(unit, "units")) {
+    unit <- units::as_units(unit)
+  }
+  if (inherits(x, "units_interval")) {
+    return(convert_units(x, unit))
+  }
+  if (inherits(x, "units")) {
+    intv <- units_interval(x, x)
+    return(convert_units(intv, unit))
+  }
+  if (is.numeric(x)) {
+    return(as_units_interval(x, unit = units::deparse_unit(unit)))
+  }
+  stop("Arguments to hypot() must be numeric, units, or units_interval objects", call. = FALSE)
+}
+
+.recycle_interval <- function(x, target_length) {
+  if (length(x) == target_length) {
+    return(x)
+  }
+  if (length(x) == 1L) {
+    return(rep(x, target_length))
+  }
+  stop(sprintf("Cannot recycle interval of length %d to length %d", length(x), target_length), call. = FALSE)
+}
+
+#' @rdname transcendental-extras
+#' @export
+hypot <- function(...) {
+  args <- list(...)
+  if (length(args) == 0L) {
+    stop("hypot() requires at least one argument", call. = FALSE)
+  }
+
+  base_unit <- NULL
+  for (arg in args) {
+    if (inherits(arg, "units_interval")) {
+      base_unit <- units(arg$lower)
+      break
+    }
+    if (inherits(arg, "units")) {
+      base_unit <- units(arg)
+      break
+    }
+  }
+  if (is.null(base_unit)) {
+    base_unit <- units::as_units(1)
+  }
+
+  intervals <- lapply(args, .coerce_hypot_argument, unit = base_unit)
+  target_length <- length(intervals[[1]])
+  if (length(intervals) > 1L) {
+    for (intv in intervals[-1]) {
+      target_length <- .resolve_length(target_length, length(intv))
+    }
+  }
+  intervals <- lapply(intervals, .recycle_interval, target_length = target_length)
+
+  if (length(intervals) == 1L) {
+    return(abs(intervals[[1]]))
+  }
+
+  result <- intervals[[1]]
+  for (i in 2:length(intervals)) {
+    current <- result
+    next_term <- intervals[[i]]
+    current_num <- .drop_units(current, base_unit)
+    next_num <- .drop_units(next_term, base_unit)
+    res <- interval_hypot(current_num$lower, current_num$upper, next_num$lower, next_num$upper)
+    result <- .new_units_interval(
+      units::set_units(res$lower, base_unit, mode = "standard"),
+      units::set_units(res$upper, base_unit, mode = "standard")
+    )
+  }
+
+  result
+}

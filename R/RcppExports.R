@@ -25,6 +25,10 @@ interval_expm1 <- function(lower, upper) {
     .Call(`_boostedintervals_interval_expm1`, lower, upper)
 }
 
+interval_exp2 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_exp2`, lower, upper)
+}
+
 interval_log <- function(lower, upper) {
     .Call(`_boostedintervals_interval_log`, lower, upper)
 }
@@ -39,6 +43,10 @@ interval_log1p <- function(lower, upper) {
 
 interval_log2 <- function(lower, upper) {
     .Call(`_boostedintervals_interval_log2`, lower, upper)
+}
+
+interval_sqrt1pm1 <- function(lower, upper) {
+    .Call(`_boostedintervals_interval_sqrt1pm1`, lower, upper)
 }
 
 interval_sin <- function(lower, upper) {
@@ -103,6 +111,10 @@ interval_intersection <- function(lower1, upper1, lower2, upper2) {
 
 interval_union <- function(lower1, upper1, lower2, upper2) {
     .Call(`_boostedintervals_interval_union`, lower1, upper1, lower2, upper2)
+}
+
+interval_hypot <- function(lower1, upper1, lower2, upper2) {
+    .Call(`_boostedintervals_interval_hypot`, lower1, upper1, lower2, upper2)
 }
 
 interval_abs <- function(lower, upper) {

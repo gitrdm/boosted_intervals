@@ -233,6 +233,24 @@ Rcpp::List interval_expm1(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
 }
 
 // [[Rcpp::export]]
+Rcpp::List interval_exp2(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  const Interval log_two(std::log(2.0), std::log(2.0));
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    Interval res = boost::numeric::exp(intv * log_two);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
 Rcpp::List interval_log(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
   const std::size_t n = lower.size();
@@ -305,6 +323,29 @@ Rcpp::List interval_log2(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
       Rcpp::stop("log2 is undefined for intervals at or below zero");
     }
     Interval res = boost::numeric::log(intv) / std::log(2.0);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_sqrt1pm1(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = lower.size();
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  const Interval one(1.0, 1.0);
+  for (std::size_t i = 0; i < n; ++i) {
+    Interval intv = make_interval(lower[i], upper[i]);
+    if (intv.lower() < -1.0) {
+      Rcpp::stop("sqrt1pm1 is undefined for intervals below -1");
+    }
+    Interval shifted = intv + one;
+    Interval sqrt_shifted = boost::numeric::sqrt(shifted);
+    Interval res = sqrt_shifted - one;
     out_lower[i] = res.lower();
     out_upper[i] = res.upper();
   }
@@ -562,6 +603,38 @@ Rcpp::List interval_union(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1
                                   get_numeric_with_recycle(upper2, i));
     out_lower[i] = std::min(int1.lower(), int2.lower());
     out_upper[i] = std::max(int1.upper(), int2.upper());
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_hypot(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1,
+                          Rcpp::NumericVector lower2, Rcpp::NumericVector upper2) {
+  validate_pair_lengths(lower1.size(), upper1.size());
+  validate_pair_lengths(lower2.size(), upper2.size());
+  const std::size_t n = resolve_length(lower1.size(), lower2.size());
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const double x_lo = get_numeric_with_recycle(lower1, i);
+    const double x_hi = get_numeric_with_recycle(upper1, i);
+    const double y_lo = get_numeric_with_recycle(lower2, i);
+    const double y_hi = get_numeric_with_recycle(upper2, i);
+
+    if (Rcpp::NumericVector::is_na(x_lo) || Rcpp::NumericVector::is_na(x_hi) ||
+        Rcpp::NumericVector::is_na(y_lo) || Rcpp::NumericVector::is_na(y_hi)) {
+      out_lower[i] = NA_REAL;
+      out_upper[i] = NA_REAL;
+      continue;
+    }
+
+    Interval x = make_interval(x_lo, x_hi);
+    Interval y = make_interval(y_lo, y_hi);
+    Interval res = boost::numeric::sqrt(x * x + y * y);
+    out_lower[i] = res.lower();
+    out_upper[i] = res.upper();
   }
 
   return Rcpp::List::create(Rcpp::Named("lower") = out_lower,

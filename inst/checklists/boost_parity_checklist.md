@@ -51,8 +51,8 @@ Use this checklist to track parity between the Boost Interval library and the `b
 - [x] Inverse trigonometric (`asin`, `acos`, `atan`) returning radians
 - [x] Hyperbolic (`sinh`, `cosh`, `tanh`)
 - [x] Inverse hyperbolic (`asinh`, `acosh`, `atanh`)
-- [ ] Base-2 exponential (`exp2`, `pow2`) – decide on exposure strategy
-- [ ] Other Boost-provided helpers (`sqrt1pm1`, `hypot`, etc.)
+- [x] Base-2 exponential (`exp2`, `pow2`) – exported interval-aware helpers (see commit for details)
+- [x] Other Boost-provided helpers (`sqrt1pm1`, `hypot`, etc.) – wrappers implemented with tests
 
 ## Rounding & Policy Controls
 
