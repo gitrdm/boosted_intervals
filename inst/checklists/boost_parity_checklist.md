@@ -13,10 +13,10 @@ Use this checklist to track parity between the Boost Interval library and the `b
 - [x] Interval creation with unit awareness (`units_interval`, `convert_units`)
 - [x] Basic arithmetic (`+`, `-`, `*`, `/`, unary `-`)
 - [x] Integer powers (`^` via `interval_pow`)
-- [ ] General real powers (`pow(interval, double)`, `pow(double, interval)`)
-- [ ] nth/root helpers (`nth_root`, `root`, `pow1p`, etc.)
+- [x] General real powers (`pow(interval, double)`, `pow(double, interval)`) — fractional exponents routed through Boost `pow`
+- [x] nth/root helpers (`nth_root`, `root`, `pow1p`, etc.) — wrappers added for `nth_root`, `pow1p`, and related utilities
 - [x] Absolute value (`abs`)
-- [ ] Hull/union helpers beyond binary union (`hull` spanning >2 inputs)
+- [x] Hull/union helpers beyond binary union (`hull` spanning >2 inputs) — implemented `hull()` aggregator with unit alignment
 - [x] Intersection (`interval_intersection`)
 
 ## Comparison & Predicates

@@ -386,6 +386,58 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_pow_numeric
+Rcpp::List interval_pow_numeric(Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector exponent);
+RcppExport SEXP _boostedintervals_interval_pow_numeric(SEXP lowerSEXP, SEXP upperSEXP, SEXP exponentSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type exponent(exponentSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_pow_numeric(lower, upper, exponent));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_scalar_pow
+Rcpp::List interval_scalar_pow(Rcpp::NumericVector base, Rcpp::NumericVector lower, Rcpp::NumericVector upper);
+RcppExport SEXP _boostedintervals_interval_scalar_pow(SEXP baseSEXP, SEXP lowerSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type base(baseSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_scalar_pow(base, lower, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_nth_root
+Rcpp::List interval_nth_root(Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::IntegerVector degree);
+RcppExport SEXP _boostedintervals_interval_nth_root(SEXP lowerSEXP, SEXP upperSEXP, SEXP degreeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type degree(degreeSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_nth_root(lower, upper, degree));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_pow1p
+Rcpp::List interval_pow1p(Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector exponent);
+RcppExport SEXP _boostedintervals_interval_pow1p(SEXP lowerSEXP, SEXP upperSEXP, SEXP exponentSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type exponent(exponentSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_pow1p(lower, upper, exponent));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_zero_in
 Rcpp::LogicalVector interval_zero_in(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
 RcppExport SEXP _boostedintervals_interval_zero_in(SEXP lowerSEXP, SEXP upperSEXP) {
@@ -676,6 +728,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_abs", (DL_FUNC) &_boostedintervals_interval_abs, 2},
     {"_boostedintervals_interval_sqrt", (DL_FUNC) &_boostedintervals_interval_sqrt, 2},
     {"_boostedintervals_interval_pow", (DL_FUNC) &_boostedintervals_interval_pow, 3},
+    {"_boostedintervals_interval_pow_numeric", (DL_FUNC) &_boostedintervals_interval_pow_numeric, 3},
+    {"_boostedintervals_interval_scalar_pow", (DL_FUNC) &_boostedintervals_interval_scalar_pow, 3},
+    {"_boostedintervals_interval_nth_root", (DL_FUNC) &_boostedintervals_interval_nth_root, 3},
+    {"_boostedintervals_interval_pow1p", (DL_FUNC) &_boostedintervals_interval_pow1p, 3},
     {"_boostedintervals_interval_zero_in", (DL_FUNC) &_boostedintervals_interval_zero_in, 2},
     {"_boostedintervals_interval_is_empty", (DL_FUNC) &_boostedintervals_interval_is_empty, 2},
     {"_boostedintervals_interval_subset", (DL_FUNC) &_boostedintervals_interval_subset, 4},

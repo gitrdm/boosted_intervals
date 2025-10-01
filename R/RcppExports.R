@@ -117,6 +117,22 @@ interval_pow <- function(lower, upper, exponent) {
     .Call(`_boostedintervals_interval_pow`, lower, upper, exponent)
 }
 
+interval_pow_numeric <- function(lower, upper, exponent) {
+    .Call(`_boostedintervals_interval_pow_numeric`, lower, upper, exponent)
+}
+
+interval_scalar_pow <- function(base, lower, upper) {
+    .Call(`_boostedintervals_interval_scalar_pow`, base, lower, upper)
+}
+
+interval_nth_root <- function(lower, upper, degree) {
+    .Call(`_boostedintervals_interval_nth_root`, lower, upper, degree)
+}
+
+interval_pow1p <- function(lower, upper, exponent) {
+    .Call(`_boostedintervals_interval_pow1p`, lower, upper, exponent)
+}
+
 interval_zero_in <- function(lower, upper) {
     .Call(`_boostedintervals_interval_zero_in`, lower, upper)
 }

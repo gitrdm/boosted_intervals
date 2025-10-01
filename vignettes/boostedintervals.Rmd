@@ -180,8 +180,13 @@ mig(direction)
 distance(width_a, width_b)
 zero_in(direction)
 
+pow_interval(units_interval(set_units(1, "m^2"), set_units(9, "m^2")), 0.5)
+nth_root(units_interval(set_units(1, "m^4"), set_units(16, "m^4")), 4)
+pow1p(direction, 3)
+
 bisect(other_width)
 inflate(sum_interval, absolute = set_units(0.1, "m"))
+hull(sum_interval, other_width, empty_interval(unit = "m"), na.rm = TRUE)
 ```
 
 ## Next steps

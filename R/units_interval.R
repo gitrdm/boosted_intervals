@@ -18,7 +18,7 @@
 .new_units_interval <- function(lower, upper, validate = TRUE) {
   interval <- structure(
     list(lower = lower, upper = upper),
-    class = "units_interval"
+    class = c("units_interval", "list")
   )
   if (validate) {
     interval <- .validate_units_interval(interval)
@@ -261,6 +261,17 @@ length.units_interval <- function(x) {
     stop("Dropping dimensions is not supported for intervals.", call. = FALSE)
   }
   .new_units_interval(x$lower[i], x$upper[i])
+}
+
+#' @export
+`$.units_interval` <- function(x, name) {
+  if (missing(name)) {
+    stop("Must supply a component name", call. = FALSE)
+  }
+  if (!name %in% names(x)) {
+    stop(sprintf("Component '%s' does not exist", name), call. = FALSE)
+  }
+  x[[name]]
 }
 
 #' Combine interval vectors

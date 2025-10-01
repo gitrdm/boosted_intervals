@@ -356,3 +356,62 @@ test_that("inflate combines absolute and relative widening", {
   expect_error(inflate(base, relative = -0.1), "non-negative")
   expect_error(inflate(base, relative = set_units(1, "m")), "dimensionless")
 })
+
+test_that("pow_interval supports fractional exponents with units", {
+  squared <- units_interval(set_units(1, "m^2"), set_units(16, "m^2"))
+  root <- pow_interval(squared, 0.5)
+  expect_equal(units::deparse_unit(lower_bounds(root)), "m")
+  expect_equal(units::drop_units(lower_bounds(root)), 1)
+  expect_equal(units::drop_units(upper_bounds(root)), 4)
+
+  expect_error(pow_interval(units_interval(-1, 1, unit = "1"), -0.25), "spanning zero")
+})
+
+test_that("pow_scalar_interval raises scalars to interval exponents", {
+  exponent <- units_interval(set_units(1, "1"), set_units(2, "1"))
+  res <- pow_scalar_interval(2, exponent)
+  expect_equal(units::deparse_unit(lower_bounds(res)), "1")
+  expect_equal(units::drop_units(lower_bounds(res)), 2^1)
+  expect_equal(units::drop_units(upper_bounds(res)), 2^2)
+})
+
+test_that("nth_root returns expected enclosures", {
+  cube <- units_interval(set_units(-8, "m^3"), set_units(27, "m^3"))
+  root3 <- nth_root(cube, 3)
+  expect_equal(units::deparse_unit(lower_bounds(root3)), "m")
+  expect_equal(units::drop_units(lower_bounds(root3)), -2)
+  expect_equal(units::drop_units(upper_bounds(root3)), 3)
+
+  negatives <- units_interval(set_units(-4, "1"), set_units(-1, "1"))
+  even_root <- nth_root(negatives, 2)
+  expect_true(all(is.na(lower_bounds(even_root))))
+})
+
+test_that("pow1p matches pow(1 + x, p) - 1", {
+  x <- units_interval(set_units(-0.1, "1"), set_units(0.1, "1"))
+  res <- pow1p(x, 3)
+
+  one <- units_interval(set_units(1, "1"), set_units(1, "1"))
+  expected <- pow_interval(one + x, 3) - one
+
+  expect_equal(lower_bounds(res), lower_bounds(expected))
+  expect_equal(upper_bounds(res), upper_bounds(expected))
+})
+
+test_that("hull aggregates multiple intervals", {
+  a <- units_interval(set_units(0, "m"), set_units(1, "m"))
+  b <- units_interval(set_units(0.5, "m"), set_units(2, "m"))
+  c <- units_interval(set_units(-1, "m"), set_units(0, "m"))
+
+  combined <- hull(a, b, c)
+  expect_equal(units::drop_units(lower_bounds(combined)), rep(-1, length(combined)))
+  expect_equal(units::drop_units(upper_bounds(combined)), rep(2, length(combined)))
+
+  empty <- empty_interval(unit = "m")
+  expect_equal(hull(a, empty, na.rm = TRUE), hull(a))
+  expect_true(all(is.na(lower_bounds(hull(a, empty)))))
+
+  numeric_hull <- hull(1, units_interval(set_units(0, "1"), set_units(2, "1")), unit = "1")
+  expect_equal(units::drop_units(lower_bounds(numeric_hull)), 0)
+  expect_equal(units::drop_units(upper_bounds(numeric_hull)), 2)
+})

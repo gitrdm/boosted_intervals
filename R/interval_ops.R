@@ -108,17 +108,48 @@ Ops.units_interval <- function(e1, e2) {
     }
     exponent <- exponent[1]
   }
-  exponent_round <- round(exponent)
-  if (!isTRUE(all.equal(exponent, exponent_round))) {
-    stop("Only integer exponents are supported for interval '^'", call. = FALSE)
+
+  exponent_value <- exponent
+  if (is.na(exponent_value)) {
+    empty <- rep(NA_real_, length(base))
+    base_unit <- units(base$lower)
+    return(.new_units_interval(
+      units::set_units(empty, base_unit, mode = "standard"),
+      units::set_units(empty, base_unit, mode = "standard")
+    ))
   }
-  exponent_int <- as.integer(exponent_round)
 
   numerics <- .drop_units(base)
-  res <- interval_pow(numerics$lower, numerics$upper, exponent_int)
-
   base_unit_sample <- units::set_units(1, units(base$lower), mode = "standard")
-  result_unit_symbol <- units::deparse_unit(base_unit_sample^exponent_int)
+  tol <- sqrt(.Machine$double.eps)
+  is_integer_exp <- abs(exponent_value - round(exponent_value)) < tol
+
+  if (is_integer_exp) {
+    exponent_int <- as.integer(round(exponent_value))
+    res <- interval_pow(numerics$lower, numerics$upper, exponent_int)
+    result_unit_symbol <- units::deparse_unit(base_unit_sample^exponent_int)
+  } else {
+    if (exponent_value < 0) {
+      zero_mask <- zero_in(base)
+      if (any(zero_mask == TRUE, na.rm = TRUE)) {
+        stop("Negative exponents are not defined for intervals spanning zero", call. = FALSE)
+      }
+    }
+    if (any(numerics$lower < 0, na.rm = TRUE)) {
+      stop("Fractional exponents require non-negative base intervals", call. = FALSE)
+    }
+    res <- interval_pow_numeric(numerics$lower, numerics$upper, exponent_value)
+    result_unit_symbol <- tryCatch(
+      units::deparse_unit(base_unit_sample^exponent_value),
+      error = function(e) {
+        stop(
+          "Cannot raise units '", units::deparse_unit(base_unit_sample),
+          "' to exponent ", exponent_value, "; integer exponents only for these units",
+          call. = FALSE
+        )
+      }
+    )
+  }
 
   .new_units_interval(
     units::set_units(res$lower, result_unit_symbol, mode = "standard"),
@@ -436,6 +467,281 @@ inflate <- function(x, absolute = 0, relative = 0) {
   .new_units_interval(
     units::set_units(widened$lower, unit, mode = "standard"),
     units::set_units(widened$upper, unit, mode = "standard")
+  )
+}
+
+#' Interval power helpers
+#'
+#' These helpers surface Boost's generalised power routines. `pow_interval()`
+#' raises an interval to a (potentially non-integer) scalar exponent while
+#' preserving enclosure guarantees. `pow_scalar_interval()` evaluates
+#' dimensionless scalars raised to interval-valued exponents. `nth_root()`
+#' extracts integer roots and `pow1p()` expands small offsets via
+#' `pow(1 + x, p) - 1` with interval rounding.
+#'
+#' @inheritParams midpoint
+#' @param exponent Numeric or dimensionless units exponent.
+#' @param base Numeric or dimensionless units vector forming the scalar base in
+#'   `pow_scalar_interval()`.
+#' @param k Positive integer root degree.
+#' @return Functions return `units_interval` vectors with appropriate units.
+#' @name interval-powers
+#'
+#' @details
+#' Note on fractional exponents: when supplying a fractional exponent using
+#' the `^` infix operator, R's operator precedence can cause unexpected
+#' results. For example, writing `x^1/3` is parsed as `(x^1) / 3`. Always
+#' wrap fractional exponents in parentheses, e.g. `x^(1/3)`, or use a
+#' numeric literal such as `0.3333333` to avoid this class of user error.
+NULL
+
+.dimensionless_numeric <- function(x, arg_name) {
+  dimless <- units::as_units(1)
+  if (inherits(x, "units")) {
+    return(units::drop_units(units::set_units(x, dimless, mode = "standard")))
+  }
+  if (is.numeric(x)) {
+    return(x)
+  }
+  stop(sprintf("Argument '%s' must be numeric or a dimensionless units vector", arg_name), call. = FALSE)
+}
+
+#' @rdname interval-powers
+#' @export
+pow_interval <- function(x, exponent) {
+  stopifnot(inherits(x, "units_interval"))
+  .interval_pow(x, exponent)
+}
+
+#' @rdname interval-powers
+#' @export
+pow_scalar_interval <- function(base, exponent) {
+  stopifnot(inherits(exponent, "units_interval"))
+  dimless <- units::as_units(1)
+  exponent_dimless <- convert_units(exponent, dimless)
+  exp_num <- .drop_units(exponent_dimless)
+
+  if (inherits(base, "units")) {
+    base_numeric <- units::drop_units(units::set_units(base, dimless, mode = "standard"))
+  } else if (is.numeric(base)) {
+    base_numeric <- base
+  } else {
+    stop("'base' must be numeric or a dimensionless units vector", call. = FALSE)
+  }
+
+  if (any(base_numeric <= 0, na.rm = TRUE)) {
+    stop("'base' must be strictly positive when raised to an interval exponent", call. = FALSE)
+  }
+
+  numerics <- interval_scalar_pow(base_numeric, exp_num$lower, exp_num$upper)
+  unit_symbol <- "1"
+  .new_units_interval(
+    units::set_units(numerics$lower, unit_symbol, mode = "standard"),
+    units::set_units(numerics$upper, unit_symbol, mode = "standard")
+  )
+}
+
+#' @rdname interval-powers
+#' @export
+nth_root <- function(x, k) {
+  stopifnot(inherits(x, "units_interval"))
+  if (inherits(k, "units")) {
+    k <- .dimensionless_numeric(k, "k")
+  }
+  if (!is.numeric(k)) {
+    stop("'k' must be numeric", call. = FALSE)
+  }
+  if (length(k) != 1L) {
+    if (!all(k == k[1])) {
+      stop("All root degrees must agree", call. = FALSE)
+    }
+    k <- k[1]
+  }
+  if (!isTRUE(all.equal(k, round(k)))) {
+    stop("Root degree must be an integer", call. = FALSE)
+  }
+  k_int <- as.integer(round(k))
+  if (k_int <= 0) {
+    stop("Root degree must be positive", call. = FALSE)
+  }
+
+  numerics <- .drop_units(x)
+  degree_vec <- rep(k_int, length.out = length(x))
+  res <- interval_nth_root(numerics$lower, numerics$upper, degree_vec)
+  # Derive the resulting unit by dividing integer exponents of the base unit
+  base_unit_template <- units(lower_bounds(x))
+  # symbolic_units have numerator/denominator vectors we can use
+  sym <- base_unit_template
+  if (!inherits(sym, "symbolic_units")) {
+    # fallback: try to coerce to symbolic representation
+    sym <- tryCatch(units::as_units(units::deparse_unit(sym)), error = function(e) NULL)
+  }
+  if (is.null(sym) || !inherits(sym, "symbolic_units")) {
+    stop("Cannot determine base unit structure for nth_root", call. = FALSE)
+  }
+
+  num <- sym$numerator
+  den <- sym$denominator
+  all_syms <- unique(c(num, den))
+  net_counts <- vapply(all_syms, function(s) {
+    sum(num == s) - sum(den == s)
+  }, integer(1))
+
+  if (any(net_counts %% k_int != 0)) {
+    stop("Cannot take the ", k_int, "-th root of unit '", units::deparse_unit(base_unit_template), "'", call. = FALSE)
+  }
+
+  new_counts <- net_counts / k_int
+  # Build unit string
+  parts <- character(0)
+  for (i in seq_along(all_syms)) {
+    s <- all_syms[i]
+    expn <- new_counts[i]
+    if (expn == 0) next
+    if (expn == 1) parts <- c(parts, s) else parts <- c(parts, paste0(s, "^", expn))
+  }
+  unit_str <- if (length(parts) == 0) "1" else paste(parts, collapse = " ")
+  result_unit <- tryCatch(units::as_units(unit_str), error = function(e) NULL)
+  if (is.null(result_unit)) {
+    stop("Cannot construct root unit from '", units::deparse_unit(base_unit_template), "'", call. = FALSE)
+  }
+
+  .new_units_interval(
+    units::set_units(res$lower, result_unit, mode = "standard"),
+    units::set_units(res$upper, result_unit, mode = "standard")
+  )
+}
+
+#' @rdname interval-powers
+#' @export
+root <- function(x, k) {
+  nth_root(x, k)
+}
+
+#' @rdname interval-powers
+#' @export
+pow1p <- function(x, exponent) {
+  stopifnot(inherits(x, "units_interval"))
+  dimless <- units::as_units(1)
+  x_dimless <- convert_units(x, dimless)
+  numerics <- .drop_units(x_dimless)
+
+  exponent_numeric <- .dimensionless_numeric(exponent, "exponent")
+  if (length(exponent_numeric) != 1L) {
+    if (!all(exponent_numeric == exponent_numeric[1])) {
+      stop("Exponent recycling would lead to inconsistent units", call. = FALSE)
+    }
+    exponent_numeric <- exponent_numeric[1]
+  }
+
+  res <- interval_pow1p(numerics$lower, numerics$upper, exponent_numeric)
+  .new_units_interval(
+    units::set_units(res$lower, dimless, mode = "standard"),
+    units::set_units(res$upper, dimless, mode = "standard")
+  )
+}
+
+#' Interval hull spanning multiple inputs
+#'
+#' Construct the minimal interval (element-wise) that contains every supplied
+#' interval or point. Inputs are recycled to a common length following standard
+#' R recycling rules. When `na.rm = TRUE`, empty intervals (all `NA` bounds) are
+#' ignored. Otherwise, any empty input yields an empty result.
+#'
+#' @param ... Intervals, numeric vectors, or `units` vectors to enclose.
+#' @param unit Optional unit specification used when the first argument lacks
+#'   units. Must be supplied if the first argument is numeric.
+#' @param na.rm Whether to ignore empty intervals.
+#' @return A `units_interval` representing the combined hull.
+#' @export
+hull <- function(..., unit = NULL, na.rm = FALSE) {
+  args <- list(...)
+  if (length(args) == 0) {
+    stop("Supply at least one interval to hull()", call. = FALSE)
+  }
+
+  determine_base_unit <- function(x) {
+    if (inherits(x, "units_interval")) {
+      return(units(x$lower))
+    }
+    if (inherits(x, "units")) {
+      return(units(x))
+    }
+    NULL
+  }
+
+  base_unit <- if (!is.null(unit)) {
+    if (inherits(unit, "units")) unit else units::as_units(unit)
+  } else {
+    first_unit <- determine_base_unit(args[[1]])
+    if (is.null(first_unit)) {
+      stop("Provide 'unit' when the first argument lacks units", call. = FALSE)
+    }
+    first_unit
+  }
+
+  to_interval <- function(value) {
+    if (inherits(value, "units_interval")) {
+      convert_units(value, base_unit)
+    } else if (inherits(value, "units")) {
+      units_interval(value, value, unit = base_unit)
+    } else if (is.numeric(value)) {
+      units_interval(value, value, unit = base_unit)
+    } else {
+      stop("Unsupported input type supplied to hull()", call. = FALSE)
+    }
+  }
+
+  intervals <- lapply(args, to_interval)
+
+  is_empty_interval <- function(intv) {
+    all(is.na(intv$lower)) || all(is.na(intv$upper))
+  }
+
+  if (na.rm) {
+    intervals <- Filter(function(intv) !is_empty_interval(intv), intervals)
+    if (length(intervals) == 0) {
+      return(empty_interval(unit = base_unit, length = 0))
+    }
+  } else {
+    if (any(vapply(intervals, is_empty_interval, logical(1)))) {
+      len <- length(intervals[[1]])
+      na_vec <- rep(NA_real_, len)
+      return(.new_units_interval(
+        units::set_units(na_vec, base_unit, mode = "standard"),
+        units::set_units(na_vec, base_unit, mode = "standard")
+      ))
+    }
+  }
+
+  target_length <- length(intervals[[1]])
+  if (length(intervals) > 1) {
+    for (intv in intervals[-1]) {
+      target_length <- .resolve_length(target_length, length(intv))
+    }
+  }
+
+  align_interval <- function(intv) {
+    if (length(intv) == target_length) {
+      return(convert_units(intv, base_unit))
+    }
+    convert_units(.recycle_bounds(intv, target_length), base_unit)
+  }
+
+  aligned <- lapply(intervals, align_interval)
+
+  lower_list <- lapply(aligned, function(intv) units::drop_units(intv$lower))
+  upper_list <- lapply(aligned, function(intv) units::drop_units(intv$upper))
+
+  reduce_min <- function(a, b) pmin(a, b, na.rm = FALSE)
+  reduce_max <- function(a, b) pmax(a, b, na.rm = FALSE)
+
+  lower <- Reduce(reduce_min, lower_list)
+  upper <- Reduce(reduce_max, upper_list)
+
+  .new_units_interval(
+    units::set_units(lower, base_unit, mode = "standard"),
+    units::set_units(upper, base_unit, mode = "standard")
   )
 }
 
