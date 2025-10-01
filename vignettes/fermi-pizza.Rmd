@@ -45,10 +45,10 @@ install_unit("people")
 install_unit("pizza", "1")  # pizza is dimensionless (count)
 
 # U.S. population
-us_population <- units_interval(set_units(320e6, "people"), set_units(340e6, "people"))
+us_population <- units_interval(set_units(300e6, "people"), set_units(350e6, "people"))
 
 # Pizzas per person per year
-pizzas_per_person_year <- units_interval(set_units(40, "pizza/(people*year)"), set_units(60, "pizza/(people*year)"))
+pizzas_per_person_year <- units_interval(set_units(10, "pizza/(people*year)"), set_units(30, "pizza/(people*year)"))
 
 # Area per pizza box (assuming 12-inch diameter pizza)
 # Box is roughly square, about 14 inches x 14 inches
