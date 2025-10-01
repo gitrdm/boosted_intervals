@@ -6,6 +6,7 @@
 ^\.Renviron\.local$
 ^\.git$
 ^\.gitignore$
+^\.vscode$
 ^\.Rcheck$
 ^boostedintervals_.*\.tar\.gz$
 ^..Rcheck$

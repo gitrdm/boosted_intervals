@@ -92,6 +92,13 @@ total_area_km2 <- units_interval(total_area_lower_km2, total_area_upper_km2)
 
 print("Total area covered:")
 print(total_area_km2)
+
+# Geometric mean of the bounds (typical area value)
+bounds_km2 <- c(lower_bounds(total_area_km2), upper_bounds(total_area_km2))
+geom_mean_area <- sqrt(bounds_km2[1] * bounds_km2[2])
+
+print("Geometric mean of area bounds (typical area):")
+print(geom_mean_area)
 ```
 
 ## Interpretation
