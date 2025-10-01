@@ -10,7 +10,7 @@ Description: Interval arithmetic combined with unit management,
     for flexible unit handling in R.
 Depends: R (>= 4.0.0)
 Imports: units, Rcpp, stats
-Suggests: testthat (>= 3.0.0), roxygen2, knitr, rmarkdown
+Suggests: testthat (>= 3.0.0), roxygen2, knitr, rmarkdown, pkgload
 LinkingTo: Rcpp, BH
 VignetteBuilder: knitr
 License: MIT + file LICENSE

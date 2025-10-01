@@ -1,0 +1,17 @@
+^\.Rproj.user$
+^\.Rhistory$
+^\.RData$
+^\.Ruserdata$
+^\.Renviron$
+^\.Renviron\.local$
+^\.git$
+^\.gitignore$
+^\.Rcheck$
+^boostedintervals_.*\.tar\.gz$
+^..Rcheck$
+^boostedintervals_.*\\.tar\\.gz$
+^src/.*\\.(o|so|dll|dylib)$
+^src/.*\\.(obj|lib)$
+^.*\\.aux$
+^.*\\.log$
+^.*\\.out$

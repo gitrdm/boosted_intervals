@@ -2,7 +2,7 @@
 title: "Vignette index: Discipline examples"
 vignette: >
   %\VignetteIndexEntry{Discipline vignettes}
-  %\VignetteEngine{rmarkdown::render}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 output: rmarkdown::html_vignette
 ---
