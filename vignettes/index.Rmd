@@ -14,5 +14,6 @@ This package includes a set of short discipline-focused vignettes that show typi
 - [Geoscience — uncertainty propagation](geoscience-uncertainty.html)
 - [Finance — interval cashflows and user-defined currency units](finance-intervals.html)
 - [Pharmacokinetics — dosage intervals and clearance](pharmacokinetics.html)
+- [Fermi estimation — pizza box coverage with intervals](fermi-pizza.html)
 
 Each vignette is short and self-contained. If you'd like, I can add lightweight plots or small example datasets to any of them.

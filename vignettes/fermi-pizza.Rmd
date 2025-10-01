@@ -1,0 +1,125 @@
+---
+title: "Fermi Estimation with Intervals: Pizza Box Coverage"
+author: "Riley Merrio"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fermi Estimation with Intervals: Pizza Box Coverage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(boostedintervals)
+library(units)
+```
+
+## Introduction
+
+This vignette demonstrates how to use the `boostedintervals` package to perform Fermi-type estimation problems. Fermi estimation involves making rough calculations with reasonable assumptions to arrive at an order-of-magnitude answer.
+
+We'll tackle the question: **How much area could we cover with all of the pizza boxes used by Americans in one year?**
+
+We'll use interval arithmetic to account for uncertainty in our assumptions, and leverage the `units` package for proper unit handling.
+
+## Fermi Estimation Approach
+
+To estimate the total area covered by pizza boxes:
+
+1. Estimate the U.S. population (in people)
+2. Estimate pizzas consumed per person per year (in pizza/(people·year))
+3. Estimate the area of one pizza box (in inch²)
+4. Calculate total area = population × pizzas/person/year × 1 year × area/box
+
+## Assumptions with Intervals
+
+Let's define our assumptions using intervals to represent uncertainty:
+
+```{r assumptions}
+# Install custom units
+install_unit("people")
+install_unit("pizza", "1")  # pizza is dimensionless (count)
+
+# U.S. population
+us_population <- units_interval(set_units(320e6, "people"), set_units(340e6, "people"))
+
+# Pizzas per person per year
+pizzas_per_person_year <- units_interval(set_units(40, "pizza/(people*year)"), set_units(60, "pizza/(people*year)"))
+
+# Area per pizza box (assuming 12-inch diameter pizza)
+# Box is roughly square, about 14 inches x 14 inches
+box_side <- units_interval(set_units(13, "inch"), set_units(15, "inch"))
+box_area <- box_side * box_side
+
+print(us_population)
+print(pizzas_per_person_year)
+print(box_area)
+```
+
+## Calculations
+
+Now let's perform the calculation step by step:
+
+```{r calculation}
+# Total pizzas per year (rate)
+total_pizzas_rate <- us_population * pizzas_per_person_year
+
+# Total pizzas in one year
+total_pizzas <- total_pizzas_rate * units_interval(set_units(1, "year"), set_units(1, "year"))
+
+# Total area covered
+total_area <- total_pizzas * box_area
+
+print(total_area)
+```
+
+## Converting to More Meaningful Units
+
+Since we're using custom units for counting pizzas, let's show the total area in square inches per pizza and then convert to square kilometers:
+
+```{r conversion}
+# Area per pizza in square inches
+area_per_pizza_in2 <- box_area
+print("Area per pizza box:")
+print(area_per_pizza_in2)
+
+# Convert to square kilometers
+area_per_pizza_km2 <- units_interval(set_units(box_area$lower, "km^2"), set_units(box_area$upper, "km^2"))
+print("Area per pizza box in km²:")
+print(area_per_pizza_km2)
+
+# Total area in km² (same as total pizzas * area per pizza)
+total_area_km2 <- total_pizzas * area_per_pizza_km2
+print("Total area covered:")
+print(total_area_km2)
+```
+
+## Interpretation
+
+The interval result shows the range of possible areas, accounting for uncertainty in our assumptions.
+
+To put this in perspective, let's compare to some familiar areas:
+
+```{r comparison}
+# Area of Rhode Island (approximately)
+rhode_island_area <- units_interval(set_units(2700, "km^2"), set_units(2800, "km^2"))
+
+# Area of Texas (approximately)
+texas_area <- units_interval(set_units(680000, "km^2"), set_units(690000, "km^2"))
+
+comparison <- total_area_km2 / rhode_island_area
+print(comparison)
+
+comparison_texas <- total_area_km2 / texas_area
+print(comparison_texas)
+```
+
+## Conclusion
+
+Using interval arithmetic, we've estimated that American pizza consumption could cover an area roughly equivalent to `r format(lower_bounds(comparison), digits=1)` to `r format(upper_bounds(comparison), digits=1)` Rhode Islands, or `r format(lower_bounds(comparison_texas), digits=2)` to `r format(upper_bounds(comparison_texas), digits=2)` Texases.
+
+This demonstrates how `boostedintervals` can handle uncertainty in real-world estimation problems while maintaining proper unit consistency.
