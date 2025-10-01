@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include <boost/numeric/interval.hpp>
+#include <boost/numeric/interval/compare.hpp>
 #include <boost/numeric/interval/transc.hpp>
 #include <boost/numeric/interval/utility.hpp>
 
@@ -28,6 +29,78 @@ enum class CheckingMode {
   Warning = 1,
   Permissive = 2
 };
+
+enum class IntervalRelation {
+  Less = 0,
+  LessEqual = 1,
+  Greater = 2,
+  GreaterEqual = 3,
+  Equal = 4,
+  NotEqual = 5
+};
+
+inline IntervalRelation decode_relation(int code) {
+  switch (code) {
+  case 0:
+    return IntervalRelation::Less;
+  case 1:
+    return IntervalRelation::LessEqual;
+  case 2:
+    return IntervalRelation::Greater;
+  case 3:
+    return IntervalRelation::GreaterEqual;
+  case 4:
+    return IntervalRelation::Equal;
+  case 5:
+    return IntervalRelation::NotEqual;
+  default:
+    Rcpp::stop("Unknown relation code");
+  }
+}
+
+namespace compare_possible = boost::numeric::interval_lib::compare::possible;
+namespace compare_certain = boost::numeric::interval_lib::compare::certain;
+using ComparisonError = boost::numeric::interval_lib::comparison_error;
+
+inline bool evaluate_possible_relation(const Interval& lhs,
+                                       const Interval& rhs,
+                                       IntervalRelation relation) {
+  switch (relation) {
+  case IntervalRelation::Less:
+    return compare_possible::operator<(lhs, rhs);
+  case IntervalRelation::LessEqual:
+    return compare_possible::operator<=(lhs, rhs);
+  case IntervalRelation::Greater:
+    return compare_possible::operator>(lhs, rhs);
+  case IntervalRelation::GreaterEqual:
+    return compare_possible::operator>=(lhs, rhs);
+  case IntervalRelation::Equal:
+    return compare_possible::operator==(lhs, rhs);
+  case IntervalRelation::NotEqual:
+    return compare_possible::operator!=(lhs, rhs);
+  }
+  return false;
+}
+
+inline bool evaluate_certain_relation(const Interval& lhs,
+                                      const Interval& rhs,
+                                      IntervalRelation relation) {
+  switch (relation) {
+  case IntervalRelation::Less:
+    return compare_certain::operator<(lhs, rhs);
+  case IntervalRelation::LessEqual:
+    return compare_certain::operator<=(lhs, rhs);
+  case IntervalRelation::Greater:
+    return compare_certain::operator>(lhs, rhs);
+  case IntervalRelation::GreaterEqual:
+    return compare_certain::operator>=(lhs, rhs);
+  case IntervalRelation::Equal:
+    return compare_certain::operator==(lhs, rhs);
+  case IntervalRelation::NotEqual:
+    return compare_certain::operator!=(lhs, rhs);
+  }
+  return false;
+}
 
 CheckingMode& current_checking_mode() {
   static CheckingMode mode = CheckingMode::Strict;
@@ -1263,6 +1336,129 @@ Rcpp::List interval_pow1p(Rcpp::NumericVector lower, Rcpp::NumericVector upper,
 
   return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
                             Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::LogicalVector interval_relation_possible(Rcpp::NumericVector lower1,
+                                               Rcpp::NumericVector upper1,
+                                               Rcpp::NumericVector lower2,
+                                               Rcpp::NumericVector upper2,
+                                               int relation_code) {
+  validate_pair_lengths(lower1.size(), upper1.size());
+  validate_pair_lengths(lower2.size(), upper2.size());
+  const std::size_t n = resolve_length(lower1.size(), lower2.size());
+
+  Rcpp::LogicalVector out(n);
+  const IntervalRelation relation = decode_relation(relation_code);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const double lhs_lower = get_numeric_with_recycle(lower1, i);
+    const double lhs_upper = get_numeric_with_recycle(upper1, i);
+    const double rhs_lower = get_numeric_with_recycle(lower2, i);
+    const double rhs_upper = get_numeric_with_recycle(upper2, i);
+
+    if (Rcpp::NumericVector::is_na(lhs_lower) ||
+        Rcpp::NumericVector::is_na(lhs_upper) ||
+        Rcpp::NumericVector::is_na(rhs_lower) ||
+        Rcpp::NumericVector::is_na(rhs_upper)) {
+      out[i] = NA_LOGICAL;
+      continue;
+    }
+
+    try {
+      const Interval lhs = make_interval(lhs_lower, lhs_upper);
+      const Interval rhs = make_interval(rhs_lower, rhs_upper);
+      out[i] = evaluate_possible_relation(lhs, rhs, relation);
+    } catch (const ComparisonError&) {
+      out[i] = NA_LOGICAL;
+    }
+  }
+
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::LogicalVector interval_relation_certain(Rcpp::NumericVector lower1,
+                                              Rcpp::NumericVector upper1,
+                                              Rcpp::NumericVector lower2,
+                                              Rcpp::NumericVector upper2,
+                                              int relation_code) {
+  validate_pair_lengths(lower1.size(), upper1.size());
+  validate_pair_lengths(lower2.size(), upper2.size());
+  const std::size_t n = resolve_length(lower1.size(), lower2.size());
+
+  Rcpp::LogicalVector out(n);
+  const IntervalRelation relation = decode_relation(relation_code);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const double lhs_lower = get_numeric_with_recycle(lower1, i);
+    const double lhs_upper = get_numeric_with_recycle(upper1, i);
+    const double rhs_lower = get_numeric_with_recycle(lower2, i);
+    const double rhs_upper = get_numeric_with_recycle(upper2, i);
+
+    if (Rcpp::NumericVector::is_na(lhs_lower) ||
+        Rcpp::NumericVector::is_na(lhs_upper) ||
+        Rcpp::NumericVector::is_na(rhs_lower) ||
+        Rcpp::NumericVector::is_na(rhs_upper)) {
+      out[i] = NA_LOGICAL;
+      continue;
+    }
+
+    try {
+      const Interval lhs = make_interval(lhs_lower, lhs_upper);
+      const Interval rhs = make_interval(rhs_lower, rhs_upper);
+      out[i] = evaluate_certain_relation(lhs, rhs, relation);
+    } catch (const ComparisonError&) {
+      out[i] = NA_LOGICAL;
+    }
+  }
+
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::IntegerVector interval_verify_relation(Rcpp::NumericVector lower1,
+                                             Rcpp::NumericVector upper1,
+                                             Rcpp::NumericVector lower2,
+                                             Rcpp::NumericVector upper2,
+                                             int relation_code) {
+  validate_pair_lengths(lower1.size(), upper1.size());
+  validate_pair_lengths(lower2.size(), upper2.size());
+  const std::size_t n = resolve_length(lower1.size(), lower2.size());
+
+  Rcpp::IntegerVector out(n);
+  const IntervalRelation relation = decode_relation(relation_code);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const double lhs_lower = get_numeric_with_recycle(lower1, i);
+    const double lhs_upper = get_numeric_with_recycle(upper1, i);
+    const double rhs_lower = get_numeric_with_recycle(lower2, i);
+    const double rhs_upper = get_numeric_with_recycle(upper2, i);
+
+    if (Rcpp::NumericVector::is_na(lhs_lower) ||
+        Rcpp::NumericVector::is_na(lhs_upper) ||
+        Rcpp::NumericVector::is_na(rhs_lower) ||
+        Rcpp::NumericVector::is_na(rhs_upper)) {
+      out[i] = NA_INTEGER;
+      continue;
+    }
+
+    try {
+      const Interval lhs = make_interval(lhs_lower, lhs_upper);
+      const Interval rhs = make_interval(rhs_lower, rhs_upper);
+      const bool certain = evaluate_certain_relation(lhs, rhs, relation);
+      if (certain) {
+        out[i] = 1;
+        continue;
+      }
+      const bool possible = evaluate_possible_relation(lhs, rhs, relation);
+      out[i] = possible ? NA_INTEGER : 0;
+    } catch (const ComparisonError&) {
+      out[i] = NA_INTEGER;
+    }
+  }
+
+  return out;
 }
 
 // [[Rcpp::export]]

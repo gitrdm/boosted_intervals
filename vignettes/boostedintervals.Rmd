@@ -197,6 +197,27 @@ inflate(sum_interval, absolute = set_units(0.1, "m"))
 hull(sum_interval, other_width, empty_interval(unit = "m"), na.rm = TRUE)
 ```
 
+## Diagnostics and utilities
+
+Boost's comparison helpers surface fine-grained reasoning about interval
+relations. `possible()` checks whether a relation can hold, `certain()` tests
+whether it must hold, and `verify()` combines both to deliver a tri-state
+answer. The new `contract()` helper shrinks bounds symmetrically, while
+`as_numeric_bounds()` emits plain numeric endpoints for interop with APIs that
+expect doubles.
+
+```{r}
+a <- units_interval(set_units(c(0, 2), "m"), set_units(c(0.5, 4), "m"))
+b <- units_interval(set_units(c(1, 1), "m"), set_units(c(2, 3), "m"))
+possible(a, b, "<")
+certain(a, b, "<")
+verify(a, b, "<")
+
+enclosure <- units_interval(set_units(0, "s"), set_units(10, "s"))
+contract(enclosure, absolute = set_units(1, "s"))
+as_numeric_bounds(enclosure, unit = "ms")
+```
+
 ## Directed rounding and policy controls
 
 Boost exposes fine-grained rounding controls to adjust intervals conservatively

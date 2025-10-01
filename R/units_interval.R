@@ -367,3 +367,38 @@ upper_bounds <- function(x) {
   stopifnot(inherits(x, "units_interval"))
   x$upper
 }
+
+#' Numeric interval bounds
+#'
+#' Emit the lower and upper endpoints of an interval as a numeric matrix while
+#' optionally converting to a requested unit. This helper is convenient when
+#' interfacing with APIs that expect plain doubles instead of unit-aware
+#' vectors.
+#'
+#' @param x A `units_interval` object.
+#' @param unit Optional target unit (character string or `units` object). When
+#'   omitted the interval's native unit is preserved before dropping metadata.
+#' @return A numeric matrix with columns `lower` and `upper`.
+#' @examples
+#' library(units)
+#' rng <- units_interval(set_units(0, "m"), set_units(1, "m"))
+#' as_numeric_bounds(rng)
+#' as_numeric_bounds(rng, unit = "cm")
+#' @export
+as_numeric_bounds <- function(x, unit = NULL) {
+  stopifnot(inherits(x, "units_interval"))
+  target_unit <- if (is.null(unit)) {
+    units(x$lower)
+  } else if (inherits(unit, "units")) {
+    unit
+  } else {
+    units::as_units(unit)
+  }
+
+  lower <- units::set_units(x$lower, target_unit, mode = "standard")
+  upper <- units::set_units(x$upper, target_unit, mode = "standard")
+  cbind(
+    lower = units::drop_units(lower),
+    upper = units::drop_units(upper)
+  )
+}

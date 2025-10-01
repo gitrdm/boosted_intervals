@@ -209,6 +209,18 @@ interval_pow1p <- function(lower, upper, exponent) {
     .Call(`_boostedintervals_interval_pow1p`, lower, upper, exponent)
 }
 
+interval_relation_possible <- function(lower1, upper1, lower2, upper2, relation_code) {
+    .Call(`_boostedintervals_interval_relation_possible`, lower1, upper1, lower2, upper2, relation_code)
+}
+
+interval_relation_certain <- function(lower1, upper1, lower2, upper2, relation_code) {
+    .Call(`_boostedintervals_interval_relation_certain`, lower1, upper1, lower2, upper2, relation_code)
+}
+
+interval_verify_relation <- function(lower1, upper1, lower2, upper2, relation_code) {
+    .Call(`_boostedintervals_interval_verify_relation`, lower1, upper1, lower2, upper2, relation_code)
+}
+
 interval_zero_in <- function(lower, upper) {
     .Call(`_boostedintervals_interval_zero_in`, lower, upper)
 }

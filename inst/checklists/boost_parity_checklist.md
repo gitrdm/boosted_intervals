@@ -62,9 +62,9 @@ Use this checklist to track parity between the Boost Interval library and the `b
 
 ## Diagnostics & Utilities
 
-- [ ] Possibility/necessity helpers (`possible`, `certain`, `verify`)
-- [ ] Interval inflation / contraction helpers (`inflate`, `contract`)
-- [ ] Conversion to other representations (e.g., `as.numeric` hull endpoints)
+- [x] Possibility/necessity helpers (`possible`, `certain`, `verify`) — wired to Boost comparators with regression tests
+- [x] Interval inflation / contraction helpers (`inflate`, `contract`) — inward contraction counterpart added
+- [x] Conversion to other representations (e.g., `as.numeric` hull endpoints) — numeric bounds helper implemented
 
 ## Documentation & Testing Tasks
 

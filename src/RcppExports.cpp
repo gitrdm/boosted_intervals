@@ -665,6 +665,51 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interval_relation_possible
+Rcpp::LogicalVector interval_relation_possible(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1, Rcpp::NumericVector lower2, Rcpp::NumericVector upper2, int relation_code);
+RcppExport SEXP _boostedintervals_interval_relation_possible(SEXP lower1SEXP, SEXP upper1SEXP, SEXP lower2SEXP, SEXP upper2SEXP, SEXP relation_codeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower1(lower1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper1(upper1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower2(lower2SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper2(upper2SEXP);
+    Rcpp::traits::input_parameter< int >::type relation_code(relation_codeSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_relation_possible(lower1, upper1, lower2, upper2, relation_code));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_relation_certain
+Rcpp::LogicalVector interval_relation_certain(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1, Rcpp::NumericVector lower2, Rcpp::NumericVector upper2, int relation_code);
+RcppExport SEXP _boostedintervals_interval_relation_certain(SEXP lower1SEXP, SEXP upper1SEXP, SEXP lower2SEXP, SEXP upper2SEXP, SEXP relation_codeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower1(lower1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper1(upper1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower2(lower2SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper2(upper2SEXP);
+    Rcpp::traits::input_parameter< int >::type relation_code(relation_codeSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_relation_certain(lower1, upper1, lower2, upper2, relation_code));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interval_verify_relation
+Rcpp::IntegerVector interval_verify_relation(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1, Rcpp::NumericVector lower2, Rcpp::NumericVector upper2, int relation_code);
+RcppExport SEXP _boostedintervals_interval_verify_relation(SEXP lower1SEXP, SEXP upper1SEXP, SEXP lower2SEXP, SEXP upper2SEXP, SEXP relation_codeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower1(lower1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper1(upper1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower2(lower2SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper2(upper2SEXP);
+    Rcpp::traits::input_parameter< int >::type relation_code(relation_codeSEXP);
+    rcpp_result_gen = Rcpp::wrap(interval_verify_relation(lower1, upper1, lower2, upper2, relation_code));
+    return rcpp_result_gen;
+END_RCPP
+}
 // interval_zero_in
 Rcpp::LogicalVector interval_zero_in(Rcpp::NumericVector lower, Rcpp::NumericVector upper);
 RcppExport SEXP _boostedintervals_interval_zero_in(SEXP lowerSEXP, SEXP upperSEXP) {
@@ -978,6 +1023,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_boostedintervals_interval_scalar_pow", (DL_FUNC) &_boostedintervals_interval_scalar_pow, 3},
     {"_boostedintervals_interval_nth_root", (DL_FUNC) &_boostedintervals_interval_nth_root, 3},
     {"_boostedintervals_interval_pow1p", (DL_FUNC) &_boostedintervals_interval_pow1p, 3},
+    {"_boostedintervals_interval_relation_possible", (DL_FUNC) &_boostedintervals_interval_relation_possible, 5},
+    {"_boostedintervals_interval_relation_certain", (DL_FUNC) &_boostedintervals_interval_relation_certain, 5},
+    {"_boostedintervals_interval_verify_relation", (DL_FUNC) &_boostedintervals_interval_verify_relation, 5},
     {"_boostedintervals_interval_zero_in", (DL_FUNC) &_boostedintervals_interval_zero_in, 2},
     {"_boostedintervals_interval_is_empty", (DL_FUNC) &_boostedintervals_interval_is_empty, 2},
     {"_boostedintervals_interval_subset", (DL_FUNC) &_boostedintervals_interval_subset, 4},

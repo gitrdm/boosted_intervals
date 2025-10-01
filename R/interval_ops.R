@@ -396,12 +396,14 @@ distance <- function(x, y) {
   units::set_units(res, base_unit, mode = "standard")
 }
 
-#' Interval subdivision and inflation helpers
+#' Interval subdivision and envelope helpers
 #'
 #' `bisect()` splits each interval at its median into left and right halves.
 #' `inflate()` expands intervals symmetrically by an absolute margin and/or a
-#' relative amount scaled by the interval magnitude. Both helpers preserve unit
-#' metadata while delegating enclosure guarantees to Boost.
+#' relative amount scaled by the interval magnitude. `contract()` performs the
+#' opposite operation, shrinking bounds inward while returning `NA` intervals
+#' when the requested contraction would invert the enclosure. All helpers
+#' preserve unit metadata while delegating enclosure guarantees to Boost.
 #'
 #' @inheritParams midpoint
 #' @param absolute Absolute widening applied symmetrically to each bound. Accepts
@@ -411,7 +413,9 @@ distance <- function(x, y) {
 #'   Must be dimensionless and non-negative. Defaults to zero.
 #' @return `bisect()` returns a list with `left` and `right` elements, each a
 #'   `units_interval`. `inflate()` returns a `units_interval` whose bounds have
-#'   been expanded outward.
+#'   been expanded outward. `contract()` returns a `units_interval` whose bounds
+#'   have been tightened symmetrically, producing `NA` intervals when the
+#'   requested contraction exceeds half the width.
 #' @name interval-transformations
 NULL
 
@@ -468,6 +472,61 @@ inflate <- function(x, absolute = 0, relative = 0) {
     units::set_units(widened$lower, unit, mode = "standard"),
     units::set_units(widened$upper, unit, mode = "standard")
   )
+}
+
+#' @rdname interval-transformations
+#' @export
+contract <- function(x, absolute = 0, relative = 0) {
+  stopifnot(inherits(x, "units_interval"))
+
+  len <- length(x)
+  unit <- units(x$lower)
+
+  absolute_units <- if (inherits(absolute, "units")) {
+    units::set_units(absolute, unit, mode = "standard")
+  } else {
+    units::set_units(absolute, unit, mode = "standard")
+  }
+  absolute_numeric <- units::drop_units(rep(absolute_units, length.out = len))
+  if (any(absolute_numeric < 0, na.rm = TRUE)) {
+    stop("absolute contraction must be non-negative", call. = FALSE)
+  }
+
+  if (inherits(relative, "units")) {
+    stop("relative contraction must be dimensionless", call. = FALSE)
+  }
+  relative_numeric <- rep(relative, length.out = len)
+  if (any(relative_numeric < 0, na.rm = TRUE)) {
+    stop("relative contraction must be non-negative", call. = FALSE)
+  }
+
+  numerics <- .drop_units(x)
+  widths <- numerics$upper - numerics$lower
+  magnitudes <- units::drop_units(mag(x))
+  contraction <- absolute_numeric + relative_numeric * magnitudes
+
+  new_lower <- numerics$lower + contraction
+  new_upper <- numerics$upper - contraction
+
+  invalid <- is.na(contraction) |
+    is.na(new_lower) |
+    is.na(new_upper) |
+    contraction < 0 |
+    contraction > widths / 2 |
+    is.na(widths) |
+    (new_lower > new_upper)
+
+  invalid[is.na(invalid)] <- TRUE
+
+  result_lower <- units::set_units(new_lower, unit, mode = "standard")
+  result_upper <- units::set_units(new_upper, unit, mode = "standard")
+
+  if (any(invalid, na.rm = TRUE)) {
+    result_lower[invalid] <- units::set_units(NA_real_, unit, mode = "standard")
+    result_upper[invalid] <- units::set_units(NA_real_, unit, mode = "standard")
+  }
+
+  .new_units_interval(result_lower, result_upper)
 }
 
 #' Interval power helpers
@@ -755,14 +814,51 @@ hull <- function(..., unit = NULL, na.rm = FALSE) {
 #' Boost's containment predicates. `is_whole()` identifies intervals that span
 #' the entire real line (i.e., `[-Inf, Inf]`).
 #'
+#' Possibility and necessity helpers (`possible()` / `certain()`) wrap Boost's
+#' comparison utilities to determine whether a relation *might* or *must* hold
+#' given two interval operands. `verify()` combines both checks to return a
+#' tri-state logical: `TRUE` when the relation is guaranteed, `FALSE` when it is
+#' impossible, and `NA` when the relation remains undecided.
+#'
 #' @param x,y `units_interval` objects.
+#' @param relation Comparison to evaluate. Accepts the symbols `"<"`,
+#'   `"<="`, `">"`, `">="`, `"=="`, or `"!="`, as well as their mnemonic
+#'   string aliases (`"lt"`, `"le"`, `"gt"`, `"ge"`, etc.).
 #' @return For `zero_in()` and `is_empty()`, a logical vector. For
 #'   `is_subset()` / `is_proper_subset()`, a logical vector indicating whether
 #'   the condition holds element-wise. `is_superset()` and
 #'   `is_proper_superset()` return analogous results with arguments swapped.
 #'   `is_whole()` returns `TRUE` where intervals are unbounded above and below.
+#'   `possible()` / `certain()` return logical vectors, while `verify()` returns
+#'   a logical vector that may contain `NA` when the relation cannot be proven.
 #' @name interval-diagnostics
 NULL
+
+.relation_symbols <- c("<", "<=", ">", ">=", "==", "!=")
+
+.normalize_relation_arg <- function(relation) {
+  if (length(relation) == 0L) {
+    stop("'relation' must be supplied", call. = FALSE)
+  }
+  relation <- relation[1L]
+  relation <- tolower(as.character(relation))
+  relation <- switch(
+    relation,
+    lt = "<",
+    le = "<=",
+    lte = "<=",
+    gt = ">",
+    ge = ">=",
+    gte = ">=",
+    eq = "==",
+    ne = "!=",
+    relation
+  )
+  if (!relation %in% .relation_symbols) {
+    stop(sprintf("Unsupported relation '%s'", relation), call. = FALSE)
+  }
+  list(code = match(relation, .relation_symbols) - 1L, label = relation)
+}
 
 #' @rdname interval-diagnostics
 #' @export
@@ -847,6 +943,52 @@ is_whole.units_interval <- function(x) {
   lower_inf[is.na(lower_inf)] <- FALSE
   upper_inf[is.na(upper_inf)] <- FALSE
   lower_inf & upper_inf
+}
+
+#' @rdname interval-diagnostics
+#' @export
+possible <- function(x, y, relation = c("<", "<=", ">", ">=", "==", "!=")) {
+  lookup <- .normalize_relation_arg(relation)
+  pair <- .coerce_pair_same_units(x, y)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  as.vector(interval_relation_possible(
+    x_num$lower, x_num$upper,
+    y_num$lower, y_num$upper,
+    lookup$code
+  ))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+certain <- function(x, y, relation = c("<", "<=", ">", ">=", "==", "!=")) {
+  lookup <- .normalize_relation_arg(relation)
+  pair <- .coerce_pair_same_units(x, y)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  as.vector(interval_relation_certain(
+    x_num$lower, x_num$upper,
+    y_num$lower, y_num$upper,
+    lookup$code
+  ))
+}
+
+#' @rdname interval-diagnostics
+#' @export
+verify <- function(x, y, relation = c("<", "<=", ">", ">=", "==", "!=")) {
+  lookup <- .normalize_relation_arg(relation)
+  pair <- .coerce_pair_same_units(x, y)
+  x_num <- .drop_units(pair$x)
+  y_num <- .drop_units(pair$y)
+  verdict <- interval_verify_relation(
+    x_num$lower, x_num$upper,
+    y_num$lower, y_num$upper,
+    lookup$code
+  )
+  out <- rep(NA, length(verdict))
+  out[verdict == 1L] <- TRUE
+  out[verdict == 0L] <- FALSE
+  as.vector(out)
 }
 
 # Containment ---------------------------------------------------------------
