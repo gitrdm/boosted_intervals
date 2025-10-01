@@ -56,9 +56,9 @@ Use this checklist to track parity between the Boost Interval library and the `b
 
 ## Rounding & Policy Controls
 
-- [ ] Successor / predecessor (`successor`, `predecessor`, `next`, `prior`)
-- [ ] Directed rounding utilities (e.g., `median_rounding`, `round_outward`)
-- [ ] Policy customization surface (exposing `save_state`, custom checking policies)
+- [x] Successor / predecessor (`successor`, `predecessor`, `next_interval`, `prior_interval`) — scalar and interval helpers with unit preservation
+- [x] Directed rounding utilities (e.g., `median_rounding`, `round_outward`, `round_inward`) — wrapping Boost outward/inward adjustments
+- [x] Policy customization surface (rounding/checking getters, setters, and `with_*()` guards)
 
 ## Diagnostics & Utilities
 
@@ -69,8 +69,8 @@ Use this checklist to track parity between the Boost Interval library and the `b
 ## Documentation & Testing Tasks
 
 - [x] Checklist created (`inst/checklists/boost_parity_checklist.md`)
-- [ ] Document outstanding gaps in vignette / developer notes as they close
-- [ ] Add regression tests when each unchecked item is implemented
+- [x] Document outstanding gaps in vignette / developer notes as they close — vignette section added for rounding & policies
+- [x] Add regression tests when each unchecked item is implemented — rounding test suite covers new helpers
 
 ## Usage Notes
 

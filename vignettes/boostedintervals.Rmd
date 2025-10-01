@@ -197,6 +197,42 @@ inflate(sum_interval, absolute = set_units(0.1, "m"))
 hull(sum_interval, other_width, empty_interval(unit = "m"), na.rm = TRUE)
 ```
 
+## Directed rounding and policy controls
+
+Boost exposes fine-grained rounding controls to adjust intervals conservatively
+or aggressively at the floating-point lattice level. `boostedintervals` surfaces
+these helpers directly:
+
+```{r}
+interval <- units_interval(set_units(1, "m"), set_units(2, "m"))
+
+# Expand or contract endpoints by individual ULP steps
+successor(interval)
+predecessor(interval)
+round_outward(interval)
+round_inward(interval)
+
+# `next_interval()` shifts both bounds in tandem
+next_interval(interval)
+prior_interval(interval)
+```
+
+You can temporarily control Boost's rounding and checking policies using the
+`with_*()` helpers. They ensure the previous state is restored automatically and
+work well inside pipelines or tests:
+
+```{r}
+get_rounding_mode()
+with_rounding_mode("upward", {
+  successor(0)
+})
+
+get_checking_mode()
+with_checking_mode("warning", {
+  successor(Inf)
+})
+```
+
 ## Next steps
 
 The interval building blocks shown here integrate smoothly with tidy workflows:

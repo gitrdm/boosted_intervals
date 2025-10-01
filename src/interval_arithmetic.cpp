@@ -3,6 +3,10 @@
 #include <cmath>
 #include <cstdint>
 #include <utility>
+#include <limits>
+#include <cfenv>
+#include <string>
+#include <sstream>
 #include <boost/numeric/interval.hpp>
 #include <boost/numeric/interval/transc.hpp>
 #include <boost/numeric/interval/utility.hpp>
@@ -15,14 +19,53 @@ using Interval = boost::numeric::interval<
     IntervalRounding,
     boost::numeric::interval_lib::checking_strict<double>>>;
 
+#pragma STDC FENV_ACCESS ON
+
 namespace {
+
+enum class CheckingMode {
+  Strict = 0,
+  Warning = 1,
+  Permissive = 2
+};
+
+CheckingMode& current_checking_mode() {
+  static CheckingMode mode = CheckingMode::Strict;
+  return mode;
+}
+
+inline bool is_strict_mode() {
+  return current_checking_mode() == CheckingMode::Strict;
+}
+
+inline bool allow_violation(const std::string& message) {
+  switch (current_checking_mode()) {
+  case CheckingMode::Strict:
+    Rcpp::stop(message);
+  case CheckingMode::Warning:
+    Rcpp::warning("%s", message.c_str());
+    return true;
+  case CheckingMode::Permissive:
+    return true;
+  }
+  return true;
+}
 
 inline Interval make_interval(double lower, double upper) {
   if (std::isnan(lower) || std::isnan(upper)) {
-    Rcpp::stop("Interval bounds cannot be NA");
+    allow_violation("Interval bounds cannot be NA");
+    if (!is_strict_mode()) {
+      const double nan = std::numeric_limits<double>::quiet_NaN();
+      return Interval(nan, nan);
+    }
   }
   if (lower > upper) {
-    Rcpp::stop("Lower bound (%f) exceeds upper bound (%f)", lower, upper);
+    std::ostringstream msg;
+    msg << "Lower bound (" << lower << ") exceeds upper bound (" << upper << ")";
+    allow_violation(msg.str());
+    if (!is_strict_mode()) {
+      std::swap(lower, upper);
+    }
   }
   return Interval(lower, upper);
 }
@@ -49,6 +92,34 @@ inline void validate_pair_lengths(std::size_t lower, std::size_t upper) {
 
 inline bool interval_contains_zero(const Interval& interval) {
   return interval.lower() <= 0.0 && interval.upper() >= 0.0;
+}
+
+inline double advance_value(double value, int steps, int direction) {
+  if (steps <= 0 || std::isnan(value) || !std::isfinite(value)) {
+    return value;
+  }
+  double target = value;
+  const double bound = direction > 0
+    ? std::numeric_limits<double>::infinity()
+    : -std::numeric_limits<double>::infinity();
+  for (int s = 0; s < steps; ++s) {
+    double next = std::nextafter(target, bound);
+    if (next == target) {
+      break;
+    }
+    target = next;
+  }
+  return target;
+}
+
+inline int sanitize_steps(int raw_steps) {
+  if (raw_steps == NA_INTEGER) {
+    return 0;
+  }
+  if (raw_steps < 0) {
+    Rcpp::stop("Step counts must be non-negative");
+  }
+  return raw_steps;
 }
 
 inline double midpoint_or_na(const Interval& interval) {
@@ -104,6 +175,89 @@ inline Interval pow_integer(const Interval& base, int exponent) {
 }
 
 } // namespace
+
+// [[Rcpp::export]]
+void interval_set_checking_mode(int mode) {
+  switch (mode) {
+  case 0:
+    current_checking_mode() = CheckingMode::Strict;
+    break;
+  case 1:
+    current_checking_mode() = CheckingMode::Warning;
+    break;
+  case 2:
+    current_checking_mode() = CheckingMode::Permissive;
+    break;
+  default:
+    Rcpp::stop("Unknown checking mode index");
+  }
+}
+
+// [[Rcpp::export]]
+int interval_get_checking_mode() {
+  return static_cast<int>(current_checking_mode());
+}
+
+// [[Rcpp::export]]
+int interval_get_rounding_mode() {
+  return std::fegetround();
+}
+
+// [[Rcpp::export]]
+int interval_set_rounding_mode(int mode) {
+  int current = std::fegetround();
+  if (mode != FE_TONEAREST && mode != FE_UPWARD &&
+      mode != FE_DOWNWARD && mode != FE_TOWARDZERO) {
+    Rcpp::stop("Unsupported rounding mode");
+  }
+  if (current != mode) {
+    if (std::fesetround(mode) != 0) {
+      Rcpp::stop("Failed to set rounding mode");
+    }
+  }
+  return current;
+}
+
+int to_rounding_constant(const std::string& mode) {
+  if (mode == "nearest") {
+    return FE_TONEAREST;
+  }
+  if (mode == "upward") {
+    return FE_UPWARD;
+  }
+  if (mode == "downward") {
+    return FE_DOWNWARD;
+  }
+  if (mode == "toward_zero") {
+    return FE_TOWARDZERO;
+  }
+  Rcpp::stop("Unknown rounding mode string");
+}
+
+std::string from_rounding_constant(int mode) {
+  switch (mode) {
+  case FE_TONEAREST:
+    return "nearest";
+  case FE_UPWARD:
+    return "upward";
+  case FE_DOWNWARD:
+    return "downward";
+  case FE_TOWARDZERO:
+    return "toward_zero";
+  default:
+    return "unknown";
+  }
+}
+
+// [[Rcpp::export]]
+int interval_rounding_constant(std::string mode) {
+  return to_rounding_constant(mode);
+}
+
+// [[Rcpp::export]]
+std::string interval_rounding_name(int mode) {
+  return from_rounding_constant(mode);
+}
 
 // [[Rcpp::export]]
 Rcpp::List interval_add(Rcpp::NumericVector lower1, Rcpp::NumericVector upper1,
@@ -185,7 +339,12 @@ Rcpp::List interval_divide(Rcpp::NumericVector lower1, Rcpp::NumericVector upper
     Interval denominator = make_interval(get_numeric_with_recycle(lower2, i),
                                          get_numeric_with_recycle(upper2, i));
     if (interval_contains_zero(denominator)) {
-      Rcpp::stop("Cannot divide by an interval that spans zero");
+      allow_violation("Cannot divide by an interval that spans zero");
+      if (!is_strict_mode()) {
+        res_lower[i] = NA_REAL;
+        res_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = numerator / denominator;
     res_lower[i] = res.lower();
@@ -259,7 +418,12 @@ Rcpp::List interval_log(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() <= 0.0) {
-      Rcpp::stop("log is undefined for intervals at or below zero");
+      allow_violation("log is undefined for intervals at or below zero");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::log(intv);
     out_lower[i] = res.lower();
@@ -279,7 +443,12 @@ Rcpp::List interval_log10(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() <= 0.0) {
-      Rcpp::stop("log10 is undefined for intervals at or below zero");
+      allow_violation("log10 is undefined for intervals at or below zero");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::log(intv) / std::log(10.0);
     out_lower[i] = res.lower();
@@ -300,7 +469,12 @@ Rcpp::List interval_log1p(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() <= -1.0) {
-      Rcpp::stop("log1p is undefined for intervals at or below -1");
+      allow_violation("log1p is undefined for intervals at or below -1");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::log(intv + one);
     out_lower[i] = res.lower();
@@ -320,7 +494,12 @@ Rcpp::List interval_log2(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() <= 0.0) {
-      Rcpp::stop("log2 is undefined for intervals at or below zero");
+      allow_violation("log2 is undefined for intervals at or below zero");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::log(intv) / std::log(2.0);
     out_lower[i] = res.lower();
@@ -341,7 +520,12 @@ Rcpp::List interval_sqrt1pm1(Rcpp::NumericVector lower, Rcpp::NumericVector uppe
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() < -1.0) {
-      Rcpp::stop("sqrt1pm1 is undefined for intervals below -1");
+      allow_violation("sqrt1pm1 is undefined for intervals below -1");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval shifted = intv + one;
     Interval sqrt_shifted = boost::numeric::sqrt(shifted);
@@ -657,6 +841,143 @@ Rcpp::List interval_abs(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
 }
 
 // [[Rcpp::export]]
+Rcpp::NumericVector interval_successor_scalar(Rcpp::NumericVector values,
+                                              Rcpp::IntegerVector steps) {
+  const std::size_t n = resolve_length(values.size(), steps.size());
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    double value = get_numeric_with_recycle(values, i);
+    if (Rcpp::NumericVector::is_na(value)) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    const int step = sanitize_steps(get_integer_with_recycle(steps, i));
+    out[i] = advance_value(value, step, +1);
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_predecessor_scalar(Rcpp::NumericVector values,
+                                                Rcpp::IntegerVector steps) {
+  const std::size_t n = resolve_length(values.size(), steps.size());
+  Rcpp::NumericVector out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    double value = get_numeric_with_recycle(values, i);
+    if (Rcpp::NumericVector::is_na(value)) {
+      out[i] = NA_REAL;
+      continue;
+    }
+    const int step = sanitize_steps(get_integer_with_recycle(steps, i));
+    out[i] = advance_value(value, step, -1);
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_next_scalar(Rcpp::NumericVector values,
+                                         Rcpp::IntegerVector steps) {
+  return interval_successor_scalar(values, steps);
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector interval_prior_scalar(Rcpp::NumericVector values,
+                                          Rcpp::IntegerVector steps) {
+  return interval_predecessor_scalar(values, steps);
+}
+
+Rcpp::List interval_adjust_bounds(Rcpp::NumericVector lower,
+                                  Rcpp::NumericVector upper,
+                                  Rcpp::IntegerVector steps,
+                                  int lower_dir,
+                                  int upper_dir,
+                                  bool adjust_lower,
+                                  bool adjust_upper) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = resolve_length(lower.size(), steps.size());
+
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    double lo = get_numeric_with_recycle(lower, i);
+    double hi = get_numeric_with_recycle(upper, i);
+    const int step = sanitize_steps(get_integer_with_recycle(steps, i));
+    double new_lo = lo;
+    double new_hi = hi;
+    if (adjust_lower) {
+      new_lo = advance_value(lo, step, lower_dir);
+    }
+    if (adjust_upper) {
+      new_hi = advance_value(hi, step, upper_dir);
+    }
+    out_lower[i] = new_lo;
+    out_upper[i] = new_hi;
+  }
+
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_successor_interval(Rcpp::NumericVector lower,
+                                        Rcpp::NumericVector upper,
+                                        Rcpp::IntegerVector steps) {
+  return interval_adjust_bounds(lower, upper, steps, 0, +1, false, true);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_predecessor_interval(Rcpp::NumericVector lower,
+                                          Rcpp::NumericVector upper,
+                                          Rcpp::IntegerVector steps) {
+  return interval_adjust_bounds(lower, upper, steps, -1, 0, true, false);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_next_interval(Rcpp::NumericVector lower,
+                                   Rcpp::NumericVector upper,
+                                   Rcpp::IntegerVector steps) {
+  return interval_adjust_bounds(lower, upper, steps, +1, +1, true, true);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_prior_interval(Rcpp::NumericVector lower,
+                                    Rcpp::NumericVector upper,
+                                    Rcpp::IntegerVector steps) {
+  return interval_adjust_bounds(lower, upper, steps, -1, -1, true, true);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_round_outward(Rcpp::NumericVector lower,
+                                   Rcpp::NumericVector upper,
+                                   Rcpp::IntegerVector steps) {
+  return interval_adjust_bounds(lower, upper, steps, -1, +1, true, true);
+}
+
+// [[Rcpp::export]]
+Rcpp::List interval_round_inward(Rcpp::NumericVector lower,
+                                  Rcpp::NumericVector upper,
+                                  Rcpp::IntegerVector steps) {
+  validate_pair_lengths(lower.size(), upper.size());
+  const std::size_t n = resolve_length(lower.size(), steps.size());
+  Rcpp::NumericVector out_lower(n), out_upper(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    double lo = get_numeric_with_recycle(lower, i);
+    double hi = get_numeric_with_recycle(upper, i);
+    const int step = sanitize_steps(get_integer_with_recycle(steps, i));
+    double new_lo = advance_value(lo, step, +1);
+    double new_hi = advance_value(hi, step, -1);
+    if (!std::isnan(new_lo) && !std::isnan(new_hi) && new_lo > new_hi) {
+      out_lower[i] = NA_REAL;
+      out_upper[i] = NA_REAL;
+    } else {
+      out_lower[i] = new_lo;
+      out_upper[i] = new_hi;
+    }
+  }
+  return Rcpp::List::create(Rcpp::Named("lower") = out_lower,
+                            Rcpp::Named("upper") = out_upper);
+}
+
+// [[Rcpp::export]]
 Rcpp::List interval_sqrt(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   validate_pair_lengths(lower.size(), upper.size());
   const std::size_t n = lower.size();
@@ -664,7 +985,12 @@ Rcpp::List interval_sqrt(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() < 0.0) {
-      Rcpp::stop("Cannot take square root of an interval with negative lower bound");
+      allow_violation("Cannot take square root of an interval with negative lower bound");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::sqrt(intv);
     out_lower[i] = res.lower();
@@ -686,10 +1012,20 @@ Rcpp::List interval_pow(Rcpp::NumericVector lower, Rcpp::NumericVector upper,
                                   get_numeric_with_recycle(upper, i));
     const int power = get_integer_with_recycle(exponent, i);
     if (power == 0 && interval_contains_zero(intv)) {
-      Rcpp::stop("0^0 is undefined for interval exponentiation");
+      allow_violation("0^0 is undefined for interval exponentiation");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     if (power < 0 && interval_contains_zero(intv)) {
-      Rcpp::stop("Negative exponents are not defined for intervals spanning zero");
+      allow_violation("Negative exponents are not defined for intervals spanning zero");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = pow_integer(intv, power);
     out_lower[i] = res.lower();
@@ -720,7 +1056,12 @@ Rcpp::List interval_pow_numeric(Rcpp::NumericVector lower, Rcpp::NumericVector u
     }
 
     if (lo < 0.0) {
-      Rcpp::stop("interval_pow_numeric requires non-negative bases");
+      allow_violation("interval_pow_numeric requires non-negative bases");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
 
     const double rounded = std::round(exp);
@@ -728,10 +1069,20 @@ Rcpp::List interval_pow_numeric(Rcpp::NumericVector lower, Rcpp::NumericVector u
       Interval base = make_interval(lo, hi);
       const int power = static_cast<int>(rounded);
       if (power == 0 && interval_contains_zero(base)) {
-        Rcpp::stop("0^0 is undefined for interval exponentiation");
+        allow_violation("0^0 is undefined for interval exponentiation");
+        if (!is_strict_mode()) {
+          out_lower[i] = NA_REAL;
+          out_upper[i] = NA_REAL;
+          continue;
+        }
       }
       if (power < 0 && interval_contains_zero(base)) {
-        Rcpp::stop("Negative exponents are not defined for intervals spanning zero");
+        allow_violation("Negative exponents are not defined for intervals spanning zero");
+        if (!is_strict_mode()) {
+          out_lower[i] = NA_REAL;
+          out_upper[i] = NA_REAL;
+          continue;
+        }
       }
       Interval res = pow_integer(base, power);
       out_lower[i] = res.lower();
@@ -741,7 +1092,12 @@ Rcpp::List interval_pow_numeric(Rcpp::NumericVector lower, Rcpp::NumericVector u
 
     if (lo == 0.0) {
       if (!(exp > 0.0)) {
-        Rcpp::stop("0 cannot be raised to non-positive exponents");
+        allow_violation("0 cannot be raised to non-positive exponents");
+        if (!is_strict_mode()) {
+          out_lower[i] = NA_REAL;
+          out_upper[i] = NA_REAL;
+          continue;
+        }
       }
       if (hi == 0.0) {
         out_lower[i] = 0.0;
@@ -762,7 +1118,12 @@ Rcpp::List interval_pow_numeric(Rcpp::NumericVector lower, Rcpp::NumericVector u
 
     Interval base = make_interval(lo, hi);
     if (base.lower() <= 0.0) {
-      Rcpp::stop("interval_pow_numeric requires strictly positive bases for non-integer exponents");
+      allow_violation("interval_pow_numeric requires strictly positive bases for non-integer exponents");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::exp(boost::numeric::log(base) * exp);
     if (boost::numeric::empty(res)) {
@@ -831,7 +1192,12 @@ Rcpp::List interval_nth_root(Rcpp::NumericVector lower, Rcpp::NumericVector uppe
   for (std::size_t i = 0; i < n; ++i) {
     const int k = get_integer_with_recycle(degree, i);
     if (k <= 0) {
-      Rcpp::stop("nth_root requires strictly positive degrees");
+      allow_violation("nth_root requires strictly positive degrees");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
 
     const double lo = get_numeric_with_recycle(lower, i);
@@ -1215,7 +1581,12 @@ Rcpp::List interval_asin(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() < -1.0 || intv.upper() > 1.0) {
-      Rcpp::stop("asin is defined only for intervals within [-1, 1]");
+      allow_violation("asin is defined only for intervals within [-1, 1]");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::asin(intv);
     out_lower[i] = res.lower();
@@ -1234,7 +1605,12 @@ Rcpp::List interval_acos(Rcpp::NumericVector lower, Rcpp::NumericVector upper) {
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() < -1.0 || intv.upper() > 1.0) {
-      Rcpp::stop("acos is defined only for intervals within [-1, 1]");
+      allow_violation("acos is defined only for intervals within [-1, 1]");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::acos(intv);
     out_lower[i] = res.lower();
@@ -1333,7 +1709,12 @@ Rcpp::List interval_acosh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() < 1.0) {
-      Rcpp::stop("acosh is defined only for intervals with lower bound >= 1");
+      allow_violation("acosh is defined only for intervals with lower bound >= 1");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::acosh(intv);
     out_lower[i] = res.lower();
@@ -1352,7 +1733,12 @@ Rcpp::List interval_atanh(Rcpp::NumericVector lower, Rcpp::NumericVector upper) 
   for (std::size_t i = 0; i < n; ++i) {
     Interval intv = make_interval(lower[i], upper[i]);
     if (intv.lower() <= -1.0 || intv.upper() >= 1.0) {
-      Rcpp::stop("atanh is defined only for intervals within (-1, 1)");
+      allow_violation("atanh is defined only for intervals within (-1, 1)");
+      if (!is_strict_mode()) {
+        out_lower[i] = NA_REAL;
+        out_upper[i] = NA_REAL;
+        continue;
+      }
     }
     Interval res = boost::numeric::atanh(intv);
     out_lower[i] = res.lower();
