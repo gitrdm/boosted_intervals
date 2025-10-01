@@ -14,6 +14,8 @@ Suggests: testthat (>= 3.0.0), roxygen2, knitr, rmarkdown, pkgload
 LinkingTo: Rcpp, BH
 VignetteBuilder: knitr
 License: MIT + file LICENSE
+URL: https://github.com/gitrdm/boosted_intervals
+BugReports: https://github.com/gitrdm/boosted_intervals/issues
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.3
